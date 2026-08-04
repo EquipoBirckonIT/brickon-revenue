@@ -1095,22 +1095,24 @@
   }
 
   async function graduarUnidad(id){
-    if(!confirm('¿Marcar esta unidad como graduada/archivada? Deja de aparecer en "en periodo de kickoff" pero su historial se conserva.')) return;
     const { error } = await sb.from('kickoff_units').update({ activo: false }).eq('id', id);
     if(error){ alert('No se pudo actualizar: ' + error.message); return; }
     await cargarKickoff();
   }
 
-  async function crearAccionDesdeKickoffId(id){
+  function crearAccionDesdeKickoffId(id){
     const u = allKickoffUnits.find(x => x.id === id);
     if(!u) return;
-    const texto = prompt('Acción para "' + u.unidad + '" (' + u.grupo + '):');
-    if(!texto) return;
-    const ok = await crearAccionReal(u.unidad + ' — ' + texto, u.grupo, 'Creada desde Kickoff', false);
-    if(ok){
-      await cargarAcciones();
-      document.querySelector('[data-tab="acciones"]').click();
+    document.querySelector('[data-tab="acciones"]').click();
+    const input = document.getElementById('accInput');
+    input.value = u.unidad + ' — ';
+    if(PARTNERS_CONOCIDOS.includes(u.grupo)){
+      document.querySelectorAll('#msPanel input').forEach(c => { c.checked = (c.value === u.grupo); });
+      closeMs();
     }
+    const notas = document.getElementById('accNotas');
+    notas.value = 'Creada desde Kickoff';
+    setTimeout(() => { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 50);
   }
 </script>
 
