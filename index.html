@@ -197,7 +197,7 @@
         <div class="subtitle">Portafolio completo · vive dentro del portal interno de Brickon, junto a Salud Semanal, Tickets IT y BrickonIA</div>
       </div>
     </div>
-    <div class="mock-flag">Acciones + Kickoff: en vivo · Proyecciones / Real vs Proy.: mockup</div>
+    <div class="mock-flag">Acciones + Kickoff + Proyecciones: en vivo · Real vs Proy.: mockup</div>
   </div>
 
   <div class="filters">
@@ -319,51 +319,45 @@
 
       <div class="card" style="border-color:#c9b8ec; background:#faf7ff;">
         <div class="section-title">
-          <div class="left">🏛️ Presentado a consejo — mes actual (Ago 2026)</div>
+          <div class="left">🏛️ Presentado a consejo — <span id="consejoMesLabel">mes actual</span></div>
         </div>
         <div style="display:flex; align-items:baseline; gap:14px;">
-          <div class="kpi-value" id="consejoValor" style="font-size:30px;">$16,200,000</div>
+          <div class="kpi-value" id="consejoValor" style="font-size:30px;">—</div>
           <button class="btn-ghost btn-sm" onclick="editarConsejo()" id="consejoEditBtn">✏️ Editar</button>
           <button class="btn-link" onclick="toggleHistConsejo()">Ver historial de cambios</button>
         </div>
         <div class="confirm-msg" id="consejoConfirm">Guardado — el valor anterior quedó registrado en el historial.</div>
         <div class="hist-panel" id="histConsejoPanel">
-          <div class="hist-item"><b>$16,200,000</b> — actual · editado por Eva · 30 jul 2026</div>
-          <div class="hist-item"><b>$15,800,000</b> — versión anterior · editado por Eva · 12 jul 2026</div>
-          <div class="hist-item"><b>$15,400,000</b> — versión original presentada · 1 jun 2026</div>
+          <div id="histConsejoBody">—</div>
         </div>
+        <p class="footnote">Datos reales — guardados en Supabase. Migrado inicialmente desde tu Sheet de Proyecciones 2026.</p>
       </div>
 
-      <div class="kpi-row">
-        <div class="kpi-card"><div class="kpi-value">$16.2M</div><div class="kpi-label">Objetivo revenue — Ago 2026</div></div>
-        <div class="kpi-card"><div class="kpi-value">396</div><div class="kpi-label">Unidades activas proyectadas</div></div>
-        <div class="kpi-card"><div class="kpi-value">$42.0M</div><div class="kpi-label">Objetivo trimestre (Q3)</div></div>
-        <div class="kpi-card"><div class="kpi-value">$191.2M</div><div class="kpi-label">Objetivo total 2026</div></div>
+      <div class="kpi-row" id="proyKpiRow">
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo Agosto (portafolio)</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Unidades activas proyectadas</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo Ago + Sep + Oct</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo total 2026</div></div>
       </div>
 
       <div class="card">
-        <div class="section-title"><div class="left">Objetivo por grupo — simplificado de tu doc de Proyecciones 2026</div></div>
+        <div class="section-title"><div class="left">Objetivo por grupo — migrado de tu doc de Proyecciones 2026 <span class="count" id="proyGruposCount">0 grupos</span></div></div>
         <div class="scroll-x">
         <table>
           <thead><tr><th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Obj. Ago</th><th class="num">Obj. Sep</th><th class="num">Obj. Oct</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
-          <tbody>
-            <tr><td>MyRevenue</td><td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('Choapan'); return false;">Choapan</a></td><td class="num">18</td><td class="num">$732,720</td><td class="num">$599,280</td><td class="num">$661,055</td><td class="num">$9,136,137</td><td>—</td></tr>
-            <tr><td>Carlos</td><td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('Corasol'); return false;">Corasol</a></td><td class="num">20</td><td class="num">$727,400</td><td class="num">$909,250</td><td class="num">$909,250</td><td class="num">$8,088,059</td><td>Entrando fuerte, arrancó en 0 unidades enero</td></tr>
-            <tr><td>MyRevenue</td><td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('Zaterra'); return false;">Zaterra</a></td><td class="num">6</td><td class="num">$317,400</td><td class="num">$333,500</td><td class="num">$165,672</td><td class="num">$3,159,685</td><td>—</td></tr>
-            <tr><td>MyRevenue</td><td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('Aurora'); return false;">Aurora</a></td><td class="num">14</td><td class="num">$472,500</td><td class="num">$556,800</td><td class="num">$390,600</td><td class="num" id="auroraTotalOverview">$4,761,957</td><td>Reviews + mundial CDMX, ver pestaña Ajustes</td></tr>
-            <tr><td>Carlos</td><td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('B2O_RivieraMaya'); return false;">B2O_RivieraMaya</a></td><td class="num">12</td><td class="num">$364,400</td><td class="num">$628,900</td><td class="num">$623,600</td><td class="num">$5,384,058</td><td>Más unidades entrando</td></tr>
-            <tr><td>MyRevenue</td><td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('Artila'); return false;">Artila</a></td><td class="num">16</td><td class="num">$1,765,859</td><td class="num">$1,782,340</td><td class="num">$1,058,322</td><td class="num">$20,949,886</td><td>Unidad menos por falta de flexibilidad</td></tr>
+          <tbody id="proyOverviewBody">
+            <tr><td colspan="8" style="text-align:center;color:#a8a498;">Cargando grupos…</td></tr>
           </tbody>
         </table>
         </div>
-        <p class="footnote">Click en el nombre del grupo para abrir su Detalle (proyección, historial y ajustar).</p>
+        <p class="footnote">Click en el nombre del grupo para abrir su Detalle (proyección, historial y ajustar). Datos reales — guardados en Supabase.</p>
       </div>
     </div>
 
-    <!-- SUB 2: DETALLE POR GRUPO (ejemplo Aurora) -->
+    <!-- SUB 2: DETALLE POR GRUPO -->
     <div class="subview" id="proy-detalle">
       <div class="toggle-row">
-        <div class="filter-pill" style="display:inline-flex;">🏠 Grupo: <b id="grupoSeleccionado" style="margin-left:4px;">Aurora</b> <span class="caret">▾</span></div>
+        <div class="filter-pill" style="display:inline-flex;">🏠 Grupo: <b id="grupoSeleccionado" style="margin-left:4px;">—</b> <span class="caret">▾</span></div>
         <div class="view-toggle">
           <button class="btn-ghost btn-sm" onclick="togglePanel('historialPanel')">📜 Historial</button>
           <button class="btn-ghost btn-sm" onclick="togglePanel('ajustarPanel')">✏️ Ajustar proyección</button>
@@ -371,37 +365,31 @@
       </div>
 
       <div class="card">
-        <div class="section-title"><div class="left">Inventario y proyección — <span id="grupoSeleccionado2">Aurora</span></div></div>
+        <div class="section-title"><div class="left">Inventario y proyección — <span id="grupoSeleccionado2">—</span></div></div>
         <div class="inv-grid">
-          <div class="inv-box"><div class="lbl">Unidades</div><div class="val">15</div></div>
-          <div class="inv-box"><div class="lbl">ADR proyectado (jul)</div><div class="val">$1,600</div></div>
-          <div class="inv-box"><div class="lbl">Occ. proyectada (jul)</div><div class="val">75%</div></div>
+          <div class="inv-box"><div class="lbl">Unidades activas</div><div class="val" id="detUnidades">—</div></div>
+          <div class="inv-box"><div class="lbl">ADR proyectado (mes actual)</div><div class="val" id="detAdr">—</div></div>
+          <div class="inv-box"><div class="lbl">Occ. proyectada (mes actual)</div><div class="val" id="detOcc">—</div></div>
         </div>
         <div class="scroll-x">
         <table>
-          <thead><tr><th>Mes</th><th class="num">Noches disp.</th><th class="num">ADR</th><th class="num">Occ.</th><th class="num">Noches res.</th><th class="num">Revenue mensual</th><th class="num">Revenue trimestral</th></tr></thead>
-          <tbody>
-            <tr><td>Mayo</td><td class="num">434</td><td class="num">$1,400</td><td class="num">53%</td><td class="num">230</td><td class="num">$322,000</td><td class="num">—</td></tr>
-            <tr><td>Junio</td><td class="num">420</td><td class="num">$1,500</td><td class="num">75%</td><td class="num">315</td><td class="num">$472,500</td><td class="num">—</td></tr>
-            <tr><td>Julio</td><td class="num">465</td><td class="num">$1,600</td><td class="num">75%</td><td class="num">348</td><td class="num">$556,800</td><td class="num">$1,262,400</td></tr>
-            <tr><td>Agosto</td><td class="num">465</td><td class="num">$1,400</td><td class="num">60%</td><td class="num">279</td><td class="num">$390,600</td><td class="num">—</td></tr>
+          <thead><tr><th>Mes</th><th class="num">Noches disp.</th><th class="num">ADR</th><th class="num">Occ.</th><th class="num">Noches res.</th><th class="num">Revenue mensual</th></tr></thead>
+          <tbody id="detMensualBody">
+            <tr><td colspan="6" style="text-align:center;color:#a8a498;">Aún no se ha capturado el detalle mensual de este grupo.</td></tr>
           </tbody>
         </table>
         </div>
 
-        <div style="margin-top:12px; font-size:12px; color:#8a8677;">Objetivo total 2026 (este grupo): <b id="auroraTotalDetalle" style="color:#1f2430; font-size:14px;">$4,761,957</b></div>
+        <div style="margin-top:12px; font-size:12px; color:#8a8677;">Objetivo total 2026 (este grupo): <b id="detTotal2026" style="color:#1f2430; font-size:14px;">—</b></div>
 
         <!-- HISTORIAL -->
         <div class="toggle-panel" id="historialPanel">
-          <div class="section-title" style="font-size:12px;"><div class="left">📜 Historial de proyecciones — Aurora</div></div>
+          <div class="section-title" style="font-size:12px;"><div class="left">📜 Historial de proyecciones — <span id="histGrupoNombre">—</span></div></div>
           <div class="scroll-x">
           <table id="historialTable">
-            <thead><tr><th>Fecha</th><th class="num">ADR obj.</th><th class="num">Occ. obj.</th><th class="num">Total obj.</th><th>Responsable</th><th>Motivo</th></tr></thead>
+            <thead><tr><th>Fecha</th><th class="num">Total antes</th><th class="num">Total nuevo</th><th>Meses afectados</th><th>Responsable</th><th>Motivo</th></tr></thead>
             <tbody id="historialBody">
-              <tr><td>23 abr 2026</td><td class="num">$1,600</td><td class="num">75%</td><td class="num">$4,761,957</td><td>MyRevenue</td><td>Versión vigente</td></tr>
-              <tr><td>26 mar 2026</td><td class="num">$3,516</td><td class="num">90%</td><td class="num">$5,676,464</td><td>MyRevenue</td><td>Bed bugs — proyección podía cambiar</td></tr>
-              <tr><td>26 feb 2026</td><td class="num">$3,516</td><td class="num">90%</td><td class="num">$5,816,196</td><td>MyRevenue</td><td>3 unidades más OBD en dic-25</td></tr>
-              <tr><td>3 feb 2026</td><td class="num">$1,022</td><td class="num">85%</td><td class="num">$4,761,800</td><td>MyRevenue</td><td>Versión original</td></tr>
+              <tr><td colspan="6" style="text-align:center;color:#a8a498;">Sin ajustes registrados todavía.</td></tr>
             </tbody>
           </table>
           </div>
@@ -409,12 +397,12 @@
 
         <!-- AJUSTAR -->
         <div class="toggle-panel" id="ajustarPanel">
-          <div class="section-title" style="font-size:12px;"><div class="left">✏️ Ajustar proyección — Aurora</div></div>
+          <div class="section-title" style="font-size:12px;"><div class="left">✏️ Ajustar proyección — <span id="ajGrupoNombre">—</span></div></div>
           <div class="adjust-form">
             <div><label>Meses afectados</label><input type="text" id="ajMeses" placeholder="Ej. Sep–Dic"></div>
-            <div><label>Nuevo ADR</label><input type="text" id="ajAdr" placeholder="$1,650"></div>
-            <div><label>Nueva Occ. %</label><input type="text" id="ajOcc" placeholder="70%"></div>
-            <div><label>Nuevo objetivo total</label><input type="text" id="ajTotal" placeholder="$5,100,000"></div>
+            <div><label>Nuevo ADR (opcional)</label><input type="text" id="ajAdr" placeholder="1650"></div>
+            <div><label>Nueva Occ. % (opcional)</label><input type="text" id="ajOcc" placeholder="70"></div>
+            <div><label>Nuevo objetivo total 2026</label><input type="text" id="ajTotal" placeholder="5100000"></div>
             <div class="full"><label>Motivo del ajuste</label><textarea id="ajMotivo" placeholder="Ej. Se resolvió el problema de reviews antes de lo esperado, subimos expectativa para Q4"></textarea></div>
             <div><label>Responsable</label><input type="text" id="ajResp" placeholder="Ej. MyRevenue"></div>
           </div>
@@ -422,13 +410,9 @@
           <div class="confirm-msg" id="ajusteConfirm">Guardado — se creó copia del valor anterior en Historial y una entrada nueva en la pestaña Ajustes.</div>
         </div>
 
-        <div class="note-box">
-          <strong>Avance de reservas (OTB) vs. mismo punto el año pasado</strong>
-          Enero: 16.8% ya reservado (vs. 6% trimestral) · Junio: 6.3% · resto de meses aún en 0% — normal para ventana de reserva de esta unidad.
-        </div>
-        <div class="note-box" style="background:#fdeeee; border-color:#f3cccc; color:#7a2323;">
+        <div class="note-box" id="detNotasBox" style="display:none; background:#fdeeee; border-color:#f3cccc; color:#7a2323;">
           <strong>Notas del grupo</strong>
-          Malas reviews que se esperan solucionar con relanzamiento · el mercado en CDMX indica que el Mundial no dará el pico esperado por el Qatar.
+          <span id="detNotasTexto"></span>
         </div>
       </div>
     </div>
@@ -436,54 +420,13 @@
     <!-- SUB 3: AJUSTES -->
     <div class="subview" id="proy-ajustes">
       <div class="card">
-        <div class="section-title"><div class="left">Log de ajustes — Q2 2026 <span class="count">3 de 18 mostrados</span></div></div>
+        <div class="section-title"><div class="left">Log de ajustes — todos los grupos <span class="count" id="ajustesGlobalCount">0</span></div></div>
 
         <div id="ajustesBody">
-          <div class="adj-card">
-            <div class="adj-head">
-              <div><div class="adj-title">Aurora — ajuste Mar 26</div><div class="adj-sub">Abr–Dic 2026</div></div>
-              <div class="adj-owner">MyRevenue · Done</div>
-            </div>
-            <div class="scroll-x">
-            <table>
-              <thead><tr><th>Mes</th><th class="num">Nuevo Occ.</th><th class="num">Nuevo Obj.</th><th class="num">Antiguo Obj.</th></tr></thead>
-              <tbody>
-                <tr><td>Abril</td><td class="num">55%</td><td class="num">$323,400</td><td class="num strike">$345,800</td></tr>
-                <tr><td>Junio</td><td class="num">75%</td><td class="num">$472,500</td><td class="num strike">$1,423,980</td></tr>
-                <tr><td>Julio</td><td class="num">75%</td><td class="num">$556,800</td><td class="num strike">$614,916</td></tr>
-              </tbody>
-            </table>
-            </div>
-            <div class="adj-total-row"><span>Nuevo total: <b>$3,765,580</b></span><span>Antiguo: <b class="strike">$4,819,976</b></span><span>Variación: <b style="color:#b3312c;">78%</b></span></div>
-            <div class="motivo"><b>Motivo de ajuste:</b>
-              <ul><li>Problemas con reviews, se esperan solucionar con relanzamiento el 30 de marzo 2026</li><li>No se espera ninguna unidad nueva en el Q2</li></ul>
-            </div>
-          </div>
-
-          <div class="adj-card">
-            <div class="adj-head">
-              <div><div class="adj-title">Artila — ajuste 2026 (Mar 26)</div><div class="adj-sub">Abr–Dic 2026</div></div>
-              <div class="adj-owner">MyRevenue · Done</div>
-            </div>
-            <div class="adj-total-row"><span>Nuevo total: <b>$4,990,939</b></span><span>Antiguo: <b class="strike">$4,195,798</b></span><span>Variación: <b style="color:#2e7d4f;">119%</b></span></div>
-            <div class="motivo"><b>Motivo de ajuste:</b>
-              <ul><li>Una listing menos por falta de flexibilidad</li><li>Ajuste a la alza de noches bloqueadas</li><li>El total de noches disponibles estaba mal calculado</li></ul>
-            </div>
-          </div>
-
-          <div class="adj-card">
-            <div class="adj-head">
-              <div><div class="adj-title">B2O_70_30 — ajuste</div><div class="adj-sub">Abr–Dic 2026</div></div>
-              <div class="adj-owner">Hebziba · Done</div>
-            </div>
-            <div class="adj-total-row"><span>Nuevo total: <b>$21,806,049</b></span><span>Antiguo: <b class="strike">$6,071,100</b></span><span>Variación: <b style="color:#2e7d4f;">359%</b></span></div>
-            <div class="motivo"><b>Motivo de ajuste:</b>
-              <ul><li>Consideración de unidades con tag verde basado en ADR del año pasado y bloqueos en calendarios</li></ul>
-            </div>
-          </div>
+          <p style="text-align:center;color:#a8a498;font-size:11.5px;">Cargando…</p>
         </div>
 
-        <p class="footnote">Cuando ajustas un grupo desde "Detalle por grupo", aquí aparece automáticamente una tarjeta nueva (resaltada) con el motivo y responsable que capturaste.</p>
+        <p class="footnote">Cuando ajustas un grupo desde "Detalle por grupo", aquí aparece automáticamente una tarjeta nueva con el motivo y responsable que capturaste. Datos reales — guardados en Supabase.</p>
       </div>
     </div>
   </div>
@@ -709,7 +652,7 @@
     return true;
   }
 
-  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); });
+  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); });
 
   // ---------- tabs principales ----------
   document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
@@ -851,13 +794,67 @@
   }
 
   // ---------- PROYECCIONES ----------
-  function irADetalle(grupo){
-    document.querySelectorAll('.subtabs .subtab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.subview').forEach(v => v.classList.remove('active'));
-    document.querySelector('[data-sub="proy-detalle"]').classList.add('active');
-    document.getElementById('proy-detalle').classList.add('active');
-    document.getElementById('grupoSeleccionado').textContent = grupo;
-    document.getElementById('grupoSeleccionado2').textContent = grupo;
+  let allProyGrupos = [];
+  let currentDetalleGrupo = null;
+  const MESES_NOMBRE = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  function fmtMoney(n){
+    if(n === null || n === undefined || isNaN(n)) return '—';
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+
+  function inicioDeMesISO(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-01';
+  }
+
+  async function cargarProyecciones(){
+    const { data, error } = await sb.from('proy_grupos').select('*').order('grupo', {ascending:true});
+    if(error){ console.error(error); document.getElementById('proyOverviewBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#b3312c;">No se pudieron cargar los grupos — revisa la consola.</td></tr>'; return; }
+    allProyGrupos = data || [];
+    renderProyOverview();
+    cargarConsejo();
+    cargarAjustesGlobal();
+  }
+
+  function renderProyOverview(){
+    const tbody = document.getElementById('proyOverviewBody');
+    document.getElementById('proyGruposCount').textContent = allProyGrupos.length + ' grupos';
+    if(allProyGrupos.length === 0){
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a8a498;">Aún no hay grupos cargados.</td></tr>';
+    } else {
+      tbody.innerHTML = allProyGrupos.map(g => `<tr>
+        <td>${g.especialista || '—'}</td>
+        <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a></td>
+        <td class="num">${g.unidades_activas ?? '—'}</td>
+        <td class="num">${fmtMoney(g.obj_ago)}</td>
+        <td class="num">${fmtMoney(g.obj_sep)}</td>
+        <td class="num">${fmtMoney(g.obj_oct)}</td>
+        <td class="num">${fmtMoney(g.total_2026)}</td>
+        <td>${g.notas || '—'}</td>
+      </tr>`).join('');
+    }
+    const sum = (key) => allProyGrupos.reduce((a,g) => a + (Number(g[key]) || 0), 0);
+    const kpis = document.querySelectorAll('#proyKpiRow .kpi-value');
+    if(kpis.length === 4){
+      kpis[0].textContent = fmtMoney(sum('obj_ago'));
+      kpis[1].textContent = sum('unidades_activas');
+      kpis[2].textContent = fmtMoney(sum('obj_ago') + sum('obj_sep') + sum('obj_oct'));
+      kpis[3].textContent = fmtMoney(sum('total_2026'));
+    }
+  }
+
+  async function cargarConsejo(){
+    const mesActual = inicioDeMesISO();
+    const { data, error } = await sb.from('proy_consejo_historial').select('*').eq('mes', mesActual).order('created_at', {ascending:false});
+    document.getElementById('consejoMesLabel').textContent = new Date(mesActual + 'T00:00:00').toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+    if(error || !data || data.length === 0){
+      document.getElementById('consejoValor').textContent = '—';
+      document.getElementById('histConsejoBody').innerHTML = '<div class="hist-item">Sin valor capturado para este mes todavía.</div>';
+      return;
+    }
+    document.getElementById('consejoValor').textContent = fmtMoney(data[0].monto);
+    document.getElementById('histConsejoBody').innerHTML = data.map((row, i) => `<div class="hist-item"><b>${fmtMoney(row.monto)}</b> — ${i===0 ? 'actual' : 'versión anterior'} · editado por ${row.editado_por || 'equipo'} · ${new Date(row.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</div>`).join('');
   }
 
   function togglePanel(id){ document.getElementById(id).classList.toggle('open'); }
@@ -866,64 +863,166 @@
 
   function editarConsejo(){
     const valEl = document.getElementById('consejoValor');
-    const current = valEl.textContent;
+    const current = valEl.textContent.replace(/[^0-9.]/g,'');
     const input = document.createElement('input');
     input.type = 'text'; input.className = 'kpi-input'; input.value = current;
     valEl.replaceWith(input);
     input.focus();
     document.getElementById('consejoEditBtn').textContent = '💾 Guardar';
-    document.getElementById('consejoEditBtn').onclick = function(){
-      const nuevo = input.value;
+    document.getElementById('consejoEditBtn').onclick = async function(){
+      const nuevo = parseFloat(input.value.replace(/[^0-9.]/g,''));
+      if(isNaN(nuevo)){ alert('Escribe un monto válido.'); return; }
+      const mesActual = inicioDeMesISO();
+      const { error } = await sb.from('proy_consejo_historial').insert({ mes: mesActual, monto: nuevo, editado_por: 'Eva' });
+      if(error){ alert('No se pudo guardar: ' + error.message); return; }
       const span = document.createElement('div');
-      span.id = 'consejoValor'; span.className = 'kpi-value'; span.style.fontSize = '30px'; span.textContent = nuevo;
+      span.id = 'consejoValor'; span.className = 'kpi-value'; span.style.fontSize = '30px';
       input.replaceWith(span);
       this.textContent = '✏️ Editar';
       this.onclick = editarConsejo;
-      const hist = document.getElementById('histConsejoPanel');
-      const row = document.createElement('div');
-      row.className = 'hist-item';
-      row.innerHTML = `<b>${nuevo}</b> — actual <span class="new-tag">NUEVO</span> · editado por ti · ${new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}`;
-      hist.prepend(row);
-      const confirm = document.getElementById('consejoConfirm');
-      confirm.classList.add('show');
-      setTimeout(()=>confirm.classList.remove('show'), 4000);
+      await cargarConsejo();
+      const confirmEl = document.getElementById('consejoConfirm');
+      confirmEl.classList.add('show');
+      setTimeout(()=>confirmEl.classList.remove('show'), 4000);
     };
   }
 
-  function guardarAjuste(){
-    const meses = document.getElementById('ajMeses').value || 'Sep–Dic';
-    const adr = document.getElementById('ajAdr').value || '$1,650';
-    const occ = document.getElementById('ajOcc').value || '70%';
-    const total = document.getElementById('ajTotal').value || '$5,100,000';
-    const motivo = document.getElementById('ajMotivo').value || 'Ajuste manual sin motivo especificado';
-    const resp = document.getElementById('ajResp').value || 'Equipo Revenue';
+  async function irADetalle(grupo){
+    document.querySelectorAll('.subtabs .subtab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.subview').forEach(v => v.classList.remove('active'));
+    document.querySelector('[data-sub="proy-detalle"]').classList.add('active');
+    document.getElementById('proy-detalle').classList.add('active');
+    currentDetalleGrupo = grupo;
+    document.getElementById('grupoSeleccionado').textContent = grupo;
+    document.getElementById('grupoSeleccionado2').textContent = grupo;
+    document.getElementById('histGrupoNombre').textContent = grupo;
+    document.getElementById('ajGrupoNombre').textContent = grupo;
+    document.getElementById('historialPanel').classList.remove('open');
+    document.getElementById('ajustarPanel').classList.remove('open');
+    await cargarDetalleGrupo(grupo);
+  }
 
-    // 1. archivar el valor anterior en Historial
-    const oldTotal = document.getElementById('auroraTotalDetalle').textContent;
+  async function cargarDetalleGrupo(grupo){
+    const g = allProyGrupos.find(x => x.grupo === grupo);
+    document.getElementById('detUnidades').textContent = g ? (g.unidades_activas ?? '—') : '—';
+    document.getElementById('detTotal2026').textContent = g ? fmtMoney(g.total_2026) : '—';
+    if(g && g.notas){
+      document.getElementById('detNotasBox').style.display = 'block';
+      document.getElementById('detNotasTexto').textContent = g.notas;
+    } else {
+      document.getElementById('detNotasBox').style.display = 'none';
+    }
+
+    const anio = new Date().getFullYear();
+    const [{ data: mensual, error: em }, { data: ajustes, error: ea }] = await Promise.all([
+      sb.from('proy_mensual').select('*').eq('grupo', grupo).eq('anio', anio).order('mes', {ascending:true}),
+      sb.from('proy_ajustes').select('*').eq('grupo', grupo).order('created_at', {ascending:false})
+    ]);
+
+    const mesActualNum = new Date().getMonth() + 1;
+    const detBody = document.getElementById('detMensualBody');
+    if(em || !mensual || mensual.length === 0){
+      detBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a8a498;">Aún no se ha capturado el detalle mensual de este grupo — usa "Ajustar" para agregarlo.</td></tr>';
+      document.getElementById('detAdr').textContent = '—';
+      document.getElementById('detOcc').textContent = '—';
+    } else {
+      detBody.innerHTML = mensual.map(m => `<tr>
+        <td>${MESES_NOMBRE[m.mes-1]}</td>
+        <td class="num">${m.noches_disponibles ?? '—'}</td>
+        <td class="num">${m.adr ? fmtMoney(m.adr) : '—'}</td>
+        <td class="num">${m.occ_pct ?? '—'}%</td>
+        <td class="num">${m.noches_reservadas ?? '—'}</td>
+        <td class="num">${fmtMoney(m.revenue_mensual)}</td>
+      </tr>`).join('');
+      const mesActualRow = mensual.find(m => m.mes === mesActualNum) || mensual[mensual.length-1];
+      document.getElementById('detAdr').textContent = mesActualRow.adr ? fmtMoney(mesActualRow.adr) : '—';
+      document.getElementById('detOcc').textContent = mesActualRow.occ_pct != null ? mesActualRow.occ_pct + '%' : '—';
+    }
+
     const histBody = document.getElementById('historialBody');
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${new Date().toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</td><td class="num">${adr}</td><td class="num">${occ}</td><td class="num">${total}</td><td>${resp}</td><td>${motivo}</td>`;
-    histBody.prepend(row);
+    if(ea || !ajustes || ajustes.length === 0){
+      histBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a8a498;">Sin ajustes registrados todavía.</td></tr>';
+    } else {
+      histBody.innerHTML = ajustes.map(a => `<tr>
+        <td>${new Date(a.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</td>
+        <td class="num">${a.total_anterior ? fmtMoney(a.total_anterior) : '—'}</td>
+        <td class="num">${fmtMoney(a.total_objetivo)}</td>
+        <td>${a.meses_afectados || '—'}</td>
+        <td>${a.responsable || '—'}</td>
+        <td>${a.motivo || '—'}</td>
+      </tr>`).join('');
+    }
+  }
 
-    // 2. actualizar el objetivo mostrado
-    document.getElementById('auroraTotalDetalle').textContent = total;
-    document.getElementById('auroraTotalOverview').textContent = total;
+  async function guardarAjuste(){
+    if(!currentDetalleGrupo){ alert('No hay un grupo seleccionado.'); return; }
+    const meses = document.getElementById('ajMeses').value.trim();
+    const adrVal = document.getElementById('ajAdr').value.trim();
+    const occVal = document.getElementById('ajOcc').value.trim();
+    const totalVal = document.getElementById('ajTotal').value.trim();
+    const motivo = document.getElementById('ajMotivo').value.trim();
+    const resp = document.getElementById('ajResp').value.trim();
+    const nuevoTotal = parseFloat(totalVal.replace(/[^0-9.]/g,''));
+    if(!totalVal || isNaN(nuevoTotal)){ alert('Escribe el nuevo objetivo total.'); return; }
 
-    // 3. crear tarjeta nueva en Ajustes
-    const ajustesBody = document.getElementById('ajustesBody');
-    const card = document.createElement('div');
-    card.className = 'adj-card is-new';
-    card.innerHTML = `<div class="adj-head">
-        <div><div class="adj-title">Aurora — ajuste manual <span class="badge b-nuevo">NUEVO</span></div><div class="adj-sub">${meses} 2026</div></div>
-        <div class="adj-owner">${resp} · Pendiente</div>
-      </div>
-      <div class="adj-total-row"><span>Nuevo total: <b>${total}</b></span><span>Antiguo: <b class="strike">${oldTotal}</b></span></div>
-      <div class="motivo"><b>Motivo de ajuste:</b><ul><li>${motivo}</li></ul></div>`;
-    ajustesBody.prepend(card);
+    const g = allProyGrupos.find(x => x.grupo === currentDetalleGrupo);
+    const totalAnterior = g ? g.total_2026 : null;
 
-    const confirm = document.getElementById('ajusteConfirm');
-    confirm.classList.add('show');
-    setTimeout(()=>confirm.classList.remove('show'), 5000);
+    const { error: e1 } = await sb.from('proy_ajustes').insert({
+      grupo: currentDetalleGrupo,
+      meses_afectados: meses || null,
+      adr_objetivo: adrVal ? parseFloat(adrVal.replace(/[^0-9.]/g,'')) : null,
+      occ_objetivo: occVal ? parseFloat(occVal.replace(/[^0-9.]/g,'')) : null,
+      total_objetivo: nuevoTotal,
+      total_anterior: totalAnterior,
+      responsable: resp || null,
+      motivo: motivo || null
+    });
+    if(e1){ alert('No se pudo guardar el ajuste: ' + e1.message); return; }
+
+    const { error: e2 } = await sb.from('proy_grupos').update({ total_2026: nuevoTotal, updated_at: new Date().toISOString() }).eq('grupo', currentDetalleGrupo);
+    if(e2){ alert('El ajuste se guardó pero no se pudo actualizar el total del grupo: ' + e2.message); }
+
+    document.getElementById('ajMeses').value = '';
+    document.getElementById('ajAdr').value = '';
+    document.getElementById('ajOcc').value = '';
+    document.getElementById('ajTotal').value = '';
+    document.getElementById('ajMotivo').value = '';
+    document.getElementById('ajResp').value = '';
+
+    await cargarProyecciones();
+    await cargarDetalleGrupo(currentDetalleGrupo);
+
+    const confirmEl = document.getElementById('ajusteConfirm');
+    confirmEl.classList.add('show');
+    setTimeout(()=>confirmEl.classList.remove('show'), 5000);
+  }
+
+  async function cargarAjustesGlobal(){
+    const { data, error } = await sb.from('proy_ajustes').select('*').order('created_at', {ascending:false}).limit(30);
+    const wrap = document.getElementById('ajustesBody');
+    if(error){ wrap.innerHTML = '<p style="text-align:center;color:#b3312c;font-size:11.5px;">No se pudo cargar el log — revisa la consola.</p>'; return; }
+    document.getElementById('ajustesGlobalCount').textContent = (data || []).length;
+    if(!data || data.length === 0){
+      wrap.innerHTML = '<p style="text-align:center;color:#a8a498;font-size:11.5px;">Aún no hay ajustes registrados — usa "Ajustar proyección" desde el Detalle de un grupo.</p>';
+      return;
+    }
+    wrap.innerHTML = data.map(a => {
+      const variacion = a.total_anterior ? Math.round((a.total_objetivo / a.total_anterior) * 100) : null;
+      const color = variacion === null ? '#55524a' : (variacion >= 100 ? '#2e7d4f' : '#b3312c');
+      return `<div class="adj-card">
+        <div class="adj-head">
+          <div><div class="adj-title">${a.grupo} — ajuste</div><div class="adj-sub">${a.meses_afectados || 'Sin especificar'}</div></div>
+          <div class="adj-owner">${a.responsable || 'Equipo Revenue'} · ${new Date(a.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>
+        <div class="adj-total-row">
+          <span>Nuevo total: <b>${fmtMoney(a.total_objetivo)}</b></span>
+          <span>Antiguo: <b class="strike">${a.total_anterior ? fmtMoney(a.total_anterior) : '—'}</b></span>
+          ${variacion !== null ? `<span>Variación: <b style="color:${color};">${variacion}%</b></span>` : ''}
+        </div>
+        ${a.motivo ? `<div class="motivo"><b>Motivo de ajuste:</b> ${a.motivo}</div>` : ''}
+      </div>`;
+    }).join('');
   }
 
   // ---------- REAL VS PROYECCIÓN ----------
