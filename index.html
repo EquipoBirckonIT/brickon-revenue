@@ -1,4 +1,3 @@
-<!-- deploy trigger: conectado a Supabase -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -165,6 +164,7 @@
   .dot { width: 8px; height: 8px; border-radius: 50%; }
   .dot-ok { background: #2e7d4f; }
   .dot-warn { background: #d8ae4f; }
+  .dot-critico { background: #b3312c; }
   .dot-pending { background: #e4e1da; }
   .dot-future { background: transparent; border: 1px dashed #ddd8cc; }
 
@@ -197,7 +197,7 @@
         <div class="subtitle">Portafolio completo · vive dentro del portal interno de Brickon, junto a Salud Semanal, Tickets IT y BrickonIA</div>
       </div>
     </div>
-    <div class="mock-flag">Acciones: en vivo · Proyecciones / Real vs Proy. / Kickoff: mockup</div>
+    <div class="mock-flag">Acciones + Kickoff: en vivo · Proyecciones / Real vs Proy.: mockup</div>
   </div>
 
   <div class="filters">
@@ -543,23 +543,22 @@
     <div class="card">
       <div class="section-title"><div class="left">+ Mapear unidad nueva</div></div>
       <div class="new-unit-form">
-        <div><label>Unidad / Código</label><input type="text" placeholder="Ej. BKAT020 — Artila 512"></div>
-        <div><label>Grupo / Partner</label>
-          <select><option>Choapan</option><option>Corasol</option><option>Zaterra</option><option>Aurora</option><option>Artila</option><option>Otro</option></select>
-        </div>
+        <div><label>Unidad</label><input type="text" id="koUnidad" placeholder="Ej. Artila 512"></div>
+        <div><label>Código interno</label><input type="text" id="koCodigo" placeholder="Ej. BKAT020"></div>
+        <div><label>Grupo / Partner</label><input type="text" id="koGrupo" placeholder="Ej. Artila"></div>
         <div><label>Tipo</label>
-          <select><option>Real unit</option><option>Virtual</option><option>Relanzamiento</option></select>
+          <select id="koTipo"><option>Real unit</option><option>Virtual</option><option>Relanzamiento</option></select>
         </div>
-        <div><label>Fecha kickoff (OBD)</label><input type="text" placeholder="dd/mm/aaaa"></div>
-        <div><label>PM by / Rev by</label><input type="text" placeholder="Ej. Jose / Carlos"></div>
-        <button class="btn-dark">Guardar</button>
+        <div><label>Fecha kickoff (OBD)</label><input type="date" id="koFecha"></div>
+        <div><label>PM by / Rev by</label><input type="text" id="koPmRev" placeholder="Ej. Jose / Carlos"></div>
+        <button class="btn-dark" onclick="guardarUnidadKickoff()">Guardar</button>
       </div>
-      <p class="footnote">Al guardar queda logueada la fecha de kickoff (OBD) y arranca el seguimiento semanal de las primeras 12 semanas. El tipo (Real / Virtual / Relanzamiento) queda fijo para comparar desempeño por tipo de unidad más adelante.</p>
+      <p class="footnote">Al guardar queda logueada la fecha de kickoff (OBD) y arranca el seguimiento semanal de las primeras 12 semanas. El tipo (Real / Virtual / Relanzamiento) queda fijo para comparar desempeño por tipo de unidad más adelante. Datos reales — guardados en Supabase.</p>
     </div>
 
     <div class="card">
       <div class="toggle-row">
-        <div class="section-title" style="margin-bottom:0;"><div class="left">🚀 En periodo de kickoff <span class="count">5 activas</span></div></div>
+        <div class="section-title" style="margin-bottom:0;"><div class="left">🚀 En periodo de kickoff <span class="count" id="koCount">0 activas</span></div></div>
       </div>
 
       <div class="scroll-x">
@@ -570,100 +569,38 @@
             <th class="num">Res. LW → Hoy</th><th>Estado</th><th>Comentarios</th><th>Progreso (12 sem.)</th><th>Acción</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td><div class="unit-name">Villa Marea 302</div><div class="unit-sub">BKVM302</div></td>
-            <td><span class="badge b-real">Real unit</span></td>
-            <td>Choapan</td>
-            <td>S30: 14 jul</td>
-            <td>Jose / Carlos</td>
-            <td class="num">2 → 3</td>
-            <td><span class="badge b-baja">OK</span></td>
-            <td>Calendario abierto, primeras reservas entrando</td>
-            <td><div class="progress-dots">
-              <span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-warn"></span><span class="dot dot-pending"></span>
-              <span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-              <span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-            </div></td>
-            <td><button class="btn-ghost btn-sm" onclick="crearAccionDesdeKickoff('Villa Marea 302','Choapan')">+ Acción</button></td>
-          </tr>
-          <tr>
-            <td><div class="unit-name">Porto Blu 1204</div><div class="unit-sub">UHPB1204</div></td>
-            <td><span class="badge b-virtual">Virtual</span></td>
-            <td>OK_PortoBlu</td>
-            <td>S26: 2 jul</td>
-            <td>Partner / MyRevenue</td>
-            <td class="num">5 → 5</td>
-            <td><span class="badge b-baja">OK</span></td>
-            <td>Última reserva 29 jul</td>
-            <td><div class="progress-dots">
-              <span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span>
-              <span class="dot dot-ok"></span><span class="dot dot-warn"></span><span class="dot dot-pending"></span><span class="dot dot-future"></span>
-              <span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-            </div></td>
-            <td><button class="btn-ghost btn-sm" onclick="crearAccionDesdeKickoff('Porto Blu 1204','OK_PortoBlu')">+ Acción</button></td>
-          </tr>
-          <tr>
-            <td><div class="unit-name">Riviera 08</div><div class="unit-sub">RVM008</div></td>
-            <td><span class="badge b-relanz">Relanzamiento</span></td>
-            <td>B2O_RivieraMaya</td>
-            <td>S23: 10 jun</td>
-            <td>Carlos / Carlos</td>
-            <td class="num">6 → 7</td>
-            <td><span class="badge b-media">Atención</span></td>
-            <td>Bajada de tarifa 10% tras relanzamiento</td>
-            <td><div class="progress-dots">
-              <span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span>
-              <span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span>
-              <span class="dot dot-warn"></span><span class="dot dot-pending"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-            </div></td>
-            <td><button class="btn-ghost btn-sm" onclick="crearAccionDesdeKickoff('Riviera 08','B2O_RivieraMaya')">+ Acción</button></td>
-          </tr>
-          <tr>
-            <td><div class="unit-name">Zaterra Loft 5</div><div class="unit-sub">ZTMX005</div></td>
-            <td><span class="badge b-real">Real unit</span></td>
-            <td>Zaterra</td>
-            <td>S29: 21 jul</td>
-            <td>Carlos / MyRevenue</td>
-            <td class="num">0 → 1</td>
-            <td><span class="badge b-media">Atención</span></td>
-            <td>Sin conversión aún, revisar tarifa base</td>
-            <td><div class="progress-dots">
-              <span class="dot dot-ok"></span><span class="dot dot-pending"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-              <span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-              <span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-            </div></td>
-            <td><button class="btn-ghost btn-sm" onclick="crearAccionDesdeKickoff('Zaterra Loft 5','Zaterra')">+ Acción</button></td>
-          </tr>
-          <tr>
-            <td><div class="unit-name">Bellamar PH2</div><div class="unit-sub">BLPH2</div></td>
-            <td><span class="badge b-real">Real unit</span></td>
-            <td>Bellamar</td>
-            <td>S26: 28 jun</td>
-            <td>Owner / Carlos</td>
-            <td class="num">4 → 4</td>
-            <td><span class="badge b-baja">OK</span></td>
-            <td>Estable, sin acción requerida</td>
-            <td><div class="progress-dots">
-              <span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-ok"></span>
-              <span class="dot dot-ok"></span><span class="dot dot-ok"></span><span class="dot dot-pending"></span><span class="dot dot-future"></span>
-              <span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span><span class="dot dot-future"></span>
-            </div></td>
-            <td><button class="btn-ghost btn-sm" onclick="crearAccionDesdeKickoff('Bellamar PH2','Bellamar')">+ Acción</button></td>
-          </tr>
+        <tbody id="koBody">
+          <tr><td colspan="10" style="text-align:center;color:#a8a498;">Cargando unidades…</td></tr>
         </tbody>
       </table>
       </div>
-      <p class="footnote">"+ Acción" abre el mismo log que la pestaña Acciones, prellenado con la unidad y el grupo — no hay que volver a escribirlo todo.</p>
+      <p class="footnote">"+ Acción" abre el mismo log que la pestaña Acciones, prellenado con la unidad y el grupo. "🎓 Graduar" archiva la unidad (deja de contar como activa, sin borrar su historial). Datos reales — guardados en Supabase.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><div class="left">📋 Registrar check-in semanal</div></div>
+      <div class="new-unit-form" style="grid-template-columns: 1.6fr 0.7fr 1fr 1fr 1fr auto;">
+        <div><label>Unidad</label><select id="ckUnidad" onchange="autoSemanaCheckin()"><option value="">Selecciona unidad…</option></select></div>
+        <div><label>Semana #</label><input type="number" id="ckSemana" min="1" max="20" placeholder="1"></div>
+        <div><label>Reservas semana pasada</label><input type="number" id="ckLw" min="0" placeholder="0"></div>
+        <div><label>Reservas hoy (acum.)</label><input type="number" id="ckHoy" min="0" placeholder="0"></div>
+        <div><label>Estado</label><select id="ckEstado"><option value="ok">OK</option><option value="atencion">Atención</option><option value="critico">Crítico</option></select></div>
+        <button class="btn-dark" onclick="guardarCheckin()">Guardar</button>
+      </div>
+      <div style="margin-top:10px;">
+        <label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">Comentario</label>
+        <input type="text" id="ckComentario" placeholder="Ej. Calendario abierto, primeras reservas entrando" style="width:100%; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;">
+      </div>
+      <p class="footnote">Cada check-in queda en el historial de la unidad y mueve sus puntos de progreso arriba. Datos reales — guardados en Supabase.</p>
     </div>
 
     <div class="card">
       <div class="section-title"><div class="left">Resumen del trimestre</div></div>
-      <div class="kick-summary">
-        <div class="item"><div class="n">16</div><div class="l">Total OBDs este trimestre</div></div>
-        <div class="item"><div class="n">9 / 12</div><div class="l">NPS enviados / contestados</div></div>
-        <div class="item"><div class="n">62</div><div class="l">NPS score (6 promotores, 1 neutral, 1 detractor)</div></div>
-        <div class="item"><div class="n">3</div><div class="l">Relanzamientos activos</div></div>
+      <div class="kick-summary" id="koResumen">
+        <div class="item"><div class="n">—</div><div class="l">Total OBDs este trimestre</div></div>
+        <div class="item"><div class="n">—</div><div class="l">Unidades activas en kickoff</div></div>
+        <div class="item"><div class="n">—</div><div class="l">Relanzamientos activos</div></div>
+        <div class="item"><div class="n">—</div><div class="l">Check-ins registrados esta semana</div></div>
       </div>
     </div>
   </div>
@@ -772,7 +709,7 @@
     return true;
   }
 
-  window.addEventListener('DOMContentLoaded', cargarAcciones);
+  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); });
 
   // ---------- tabs principales ----------
   document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
@@ -999,10 +936,177 @@
   }
 
   // ---------- KICKOFF ----------
-  async function crearAccionDesdeKickoff(unidad, grupo){
-    const texto = prompt('Acción para "' + unidad + '" (' + grupo + '):');
+  let allKickoffUnits = [];
+  let allCheckins = [];
+
+  function semanasDesde(fechaISO){
+    const inicio = new Date(fechaISO + 'T00:00:00');
+    const hoy = new Date();
+    const dias = Math.floor((hoy - inicio) / (1000*60*60*24));
+    return Math.floor(dias / 7) + 1; // semana 1 = semana del kickoff
+  }
+
+  function fmtFechaCorta(iso){
+    return new Date(iso + 'T00:00:00').toLocaleDateString('es-MX', {day:'numeric', month:'short'});
+  }
+
+  function badgeEstadoKickoff(estado){
+    if(estado === 'ok') return '<span class="badge b-baja">OK</span>';
+    if(estado === 'atencion') return '<span class="badge b-media">Atención</span>';
+    if(estado === 'critico') return '<span class="badge b-alta">Crítico</span>';
+    return '<span class="badge b-progreso">Sin check-in</span>';
+  }
+
+  function badgeTipoKickoff(tipo){
+    if(tipo === 'Real unit') return '<span class="badge b-real">Real unit</span>';
+    if(tipo === 'Virtual') return '<span class="badge b-virtual">Virtual</span>';
+    return '<span class="badge b-relanz">Relanzamiento</span>';
+  }
+
+  async function cargarKickoff(){
+    const [{ data: units, error: eu }, { data: checkins, error: ec }] = await Promise.all([
+      sb.from('kickoff_units').select('*').order('fecha_kickoff', {ascending:false}),
+      sb.from('kickoff_checkins').select('*').order('semana_num', {ascending:true})
+    ]);
+    if(eu || ec){
+      console.error(eu || ec);
+      document.getElementById('koBody').innerHTML = '<tr><td colspan="10" style="text-align:center;color:#b3312c;">No se pudieron cargar las unidades — revisa la consola.</td></tr>';
+      return;
+    }
+    allKickoffUnits = units || [];
+    allCheckins = checkins || [];
+    renderKickoff();
+  }
+
+  function renderKickoff(){
+    const activas = allKickoffUnits.filter(u => u.activo);
+    const tbody = document.getElementById('koBody');
+    document.getElementById('koCount').textContent = activas.length + (activas.length === 1 ? ' activa' : ' activas');
+
+    const sel = document.getElementById('ckUnidad');
+    const prevVal = sel.value;
+    sel.innerHTML = '<option value="">Selecciona unidad…</option>' + activas.map(u => `<option value="${u.id}">${u.unidad} — ${u.grupo}</option>`).join('');
+    if(prevVal) sel.value = prevVal;
+
+    if(activas.length === 0){
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#a8a498;">Aún no hay unidades en kickoff — mapea la primera arriba.</td></tr>';
+    } else {
+      tbody.innerHTML = activas.map(u => {
+        const checkinsUnidad = allCheckins.filter(c => c.unit_id === u.id).sort((a,b)=>a.semana_num-b.semana_num);
+        const semanaActual = semanasDesde(u.fecha_kickoff);
+        const ultimo = checkinsUnidad[checkinsUnidad.length - 1];
+        const dots = [];
+        for(let i=1; i<=12; i++){
+          const c = checkinsUnidad.find(x => x.semana_num === i);
+          let cls = 'dot-future';
+          if(c){ cls = c.estado === 'ok' ? 'dot-ok' : (c.estado === 'atencion' ? 'dot-warn' : 'dot-critico'); }
+          else if(i <= semanaActual){ cls = 'dot-pending'; }
+          dots.push(`<span class="dot ${cls}"></span>`);
+        }
+        const pmrev = [u.pm_by, u.rev_by].filter(Boolean).join(' / ');
+        return `<tr>
+          <td><div class="unit-name">${u.unidad}</div><div class="unit-sub">${u.codigo || ''}</div></td>
+          <td>${badgeTipoKickoff(u.tipo)}</td>
+          <td>${u.grupo}</td>
+          <td>S${semanaActual}: ${fmtFechaCorta(u.fecha_kickoff)}</td>
+          <td>${pmrev || '—'}</td>
+          <td class="num">${ultimo ? (ultimo.reservas_lw ?? '—') + ' → ' + (ultimo.reservas_hoy ?? '—') : '—'}</td>
+          <td>${badgeEstadoKickoff(ultimo ? ultimo.estado : null)}</td>
+          <td>${ultimo && ultimo.comentario ? ultimo.comentario : '—'}</td>
+          <td><div class="progress-dots">${dots.join('')}</div></td>
+          <td style="white-space:nowrap;">
+            <button class="btn-ghost btn-sm" onclick="crearAccionDesdeKickoffId('${u.id}')">+ Acción</button>
+            <button class="btn-ghost btn-sm" onclick="graduarUnidad('${u.id}')">🎓 Graduar</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+    actualizarResumenKickoff();
+  }
+
+  function actualizarResumenKickoff(){
+    const hoy = new Date();
+    const qStartMonth = Math.floor(hoy.getMonth()/3)*3;
+    const qStart = new Date(hoy.getFullYear(), qStartMonth, 1);
+    const qEnd = new Date(hoy.getFullYear(), qStartMonth+3, 1);
+    const enTrimestre = allKickoffUnits.filter(u => {
+      const f = new Date(u.fecha_kickoff + 'T00:00:00');
+      return f >= qStart && f < qEnd;
+    });
+    const activas = allKickoffUnits.filter(u => u.activo);
+    const relanzActivos = activas.filter(u => u.tipo === 'Relanzamiento');
+    const inicioSemana = inicioDeSemana();
+    const checkinsEstaSemana = allCheckins.filter(c => new Date(c.created_at) >= inicioSemana);
+
+    document.getElementById('koResumen').innerHTML = `
+      <div class="item"><div class="n">${enTrimestre.length}</div><div class="l">Total OBDs este trimestre</div></div>
+      <div class="item"><div class="n">${activas.length}</div><div class="l">Unidades activas en kickoff</div></div>
+      <div class="item"><div class="n">${relanzActivos.length}</div><div class="l">Relanzamientos activos</div></div>
+      <div class="item"><div class="n">${checkinsEstaSemana.length}</div><div class="l">Check-ins registrados esta semana</div></div>
+    `;
+  }
+
+  async function guardarUnidadKickoff(){
+    const unidad = document.getElementById('koUnidad').value.trim();
+    const codigo = document.getElementById('koCodigo').value.trim();
+    const grupo = document.getElementById('koGrupo').value.trim();
+    const tipo = document.getElementById('koTipo').value;
+    const fecha = document.getElementById('koFecha').value;
+    const pmrev = document.getElementById('koPmRev').value.trim();
+    if(!unidad || !grupo || !fecha){ alert('Completa al menos Unidad, Grupo y Fecha de kickoff.'); return; }
+    let pm_by = pmrev, rev_by = '';
+    if(pmrev.includes('/')){ const parts = pmrev.split('/'); pm_by = parts[0].trim(); rev_by = parts.slice(1).join('/').trim(); }
+    const { error } = await sb.from('kickoff_units').insert({ unidad, codigo: codigo || null, grupo, tipo, fecha_kickoff: fecha, pm_by: pm_by || null, rev_by: rev_by || null });
+    if(error){ alert('No se pudo guardar la unidad: ' + error.message); return; }
+    document.getElementById('koUnidad').value='';
+    document.getElementById('koCodigo').value='';
+    document.getElementById('koGrupo').value='';
+    document.getElementById('koFecha').value='';
+    document.getElementById('koPmRev').value='';
+    await cargarKickoff();
+  }
+
+  function autoSemanaCheckin(){
+    const id = document.getElementById('ckUnidad').value;
+    if(!id) return;
+    const u = allKickoffUnits.find(x => x.id === id);
+    if(u) document.getElementById('ckSemana').value = Math.max(1, semanasDesde(u.fecha_kickoff));
+  }
+
+  async function guardarCheckin(){
+    const unitId = document.getElementById('ckUnidad').value;
+    const semana = parseInt(document.getElementById('ckSemana').value, 10);
+    const lw = document.getElementById('ckLw').value;
+    const hoyVal = document.getElementById('ckHoy').value;
+    const estado = document.getElementById('ckEstado').value;
+    const comentario = document.getElementById('ckComentario').value.trim();
+    if(!unitId || !semana){ alert('Selecciona la unidad y la semana del check-in.'); return; }
+    const { error } = await sb.from('kickoff_checkins').insert({
+      unit_id: unitId, semana_num: semana,
+      reservas_lw: lw === '' ? null : parseInt(lw,10),
+      reservas_hoy: hoyVal === '' ? null : parseInt(hoyVal,10),
+      estado, comentario: comentario || null
+    });
+    if(error){ alert('No se pudo guardar el check-in: ' + error.message); return; }
+    document.getElementById('ckLw').value='';
+    document.getElementById('ckHoy').value='';
+    document.getElementById('ckComentario').value='';
+    await cargarKickoff();
+  }
+
+  async function graduarUnidad(id){
+    if(!confirm('¿Marcar esta unidad como graduada/archivada? Deja de aparecer en "en periodo de kickoff" pero su historial se conserva.')) return;
+    const { error } = await sb.from('kickoff_units').update({ activo: false }).eq('id', id);
+    if(error){ alert('No se pudo actualizar: ' + error.message); return; }
+    await cargarKickoff();
+  }
+
+  async function crearAccionDesdeKickoffId(id){
+    const u = allKickoffUnits.find(x => x.id === id);
+    if(!u) return;
+    const texto = prompt('Acción para "' + u.unidad + '" (' + u.grupo + '):');
     if(!texto) return;
-    const ok = await crearAccionReal(unidad + ' — ' + texto, grupo, 'Creada desde Kickoff', false);
+    const ok = await crearAccionReal(u.unidad + ' — ' + texto, u.grupo, 'Creada desde Kickoff', false);
     if(ok){
       await cargarAcciones();
       document.querySelector('[data-tab="acciones"]').click();
