@@ -524,7 +524,7 @@
       <div class="section-title"><div class="left">📋 Registrar check-in semanal</div></div>
       <div class="new-unit-form" style="grid-template-columns: 1.6fr 0.7fr 1fr 1fr 1fr auto;">
         <div><label>Unidad</label><select id="ckUnidad" onchange="autoSemanaCheckin()"><option value="">Selecciona unidad…</option></select></div>
-        <div><label>Semana #</label><input type="number" id="ckSemana" min="1" max="20" placeholder="1"></div>
+        <div><label>Semana del año</label><input type="number" id="ckSemana" min="1" max="53" placeholder="32"></div>
         <div><label>Reservas semana pasada</label><input type="number" id="ckLw" min="0" placeholder="0"></div>
         <div><label>Reservas hoy (acum.)</label><input type="number" id="ckHoy" min="0" placeholder="0"></div>
         <div><label>Estado</label><select id="ckEstado"><option value="ok">OK</option><option value="atencion">Atención</option><option value="critico">Crítico</option></select></div>
@@ -1038,11 +1038,37 @@
   let allKickoffUnits = [];
   let allCheckins = [];
 
-  function semanasDesde(fechaISO){
-    const inicio = new Date(fechaISO + 'T00:00:00');
-    const hoy = new Date();
-    const dias = Math.floor((hoy - inicio) / (1000*60*60*24));
-    return Math.floor(dias / 7) + 1; // semana 1 = semana del kickoff
+  // Semanas de jueves a miércoles, numeradas como semana del año (ISO, ej. semana actual = 32)
+  function weekStartThu(d){
+    const dt = new Date(d);
+    dt.setHours(0,0,0,0);
+    const dow = (dt.getDay() + 6) % 7; // Lun=0 ... Dom=6
+    const offset = (dow - 3 + 7) % 7; // dias desde el jueves mas reciente (Jue=3)
+    dt.setDate(dt.getDate() - offset);
+    return dt;
+  }
+
+  function isoWeekOf(d){
+    const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = (dt.getUTCDay() + 6) % 7;
+    dt.setUTCDate(dt.getUTCDate() - dayNum + 3); // jueves ISO mas cercano
+    const firstThursday = new Date(Date.UTC(dt.getUTCFullYear(), 0, 4));
+    const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+    return 1 + Math.round((dt - firstThursday) / (7*24*3600*1000));
+  }
+
+  function semanaDelAnio(d){
+    // Etiqueta = numero ISO de semana del miercoles de cierre (jue-mie)
+    const inicio = weekStartThu(d);
+    const cierre = new Date(inicio);
+    cierre.setDate(cierre.getDate() + 6);
+    return isoWeekOf(cierre);
+  }
+
+  function semanaIndexAbs(d){
+    // indice continuo (sin reinicio anual) para calcular semanas transcurridas
+    return Math.floor(weekStartThu(d).getTime() / (7*24*3600*1000));
   }
 
   function fmtFechaCorta(iso){
@@ -1092,22 +1118,29 @@
     } else {
       tbody.innerHTML = activas.map(u => {
         const checkinsUnidad = allCheckins.filter(c => c.unit_id === u.id).sort((a,b)=>a.semana_num-b.semana_num);
-        const semanaActual = semanasDesde(u.fecha_kickoff);
+        const inicioKickoff = new Date(u.fecha_kickoff + 'T00:00:00');
+        const semanaInicioLabel = semanaDelAnio(inicioKickoff);
+        const idxInicio = semanaIndexAbs(inicioKickoff);
+        const idxHoy = semanaIndexAbs(new Date());
+        const semanasTranscurridas = idxHoy - idxInicio + 1;
         const ultimo = checkinsUnidad[checkinsUnidad.length - 1];
         const dots = [];
         for(let i=1; i<=12; i++){
-          const c = checkinsUnidad.find(x => x.semana_num === i);
+          const fechaDot = new Date(inicioKickoff);
+          fechaDot.setDate(fechaDot.getDate() + (i-1)*7);
+          const labelDot = semanaDelAnio(fechaDot);
+          const c = checkinsUnidad.find(x => x.semana_num === labelDot);
           let cls = 'dot-future';
           if(c){ cls = c.estado === 'ok' ? 'dot-ok' : (c.estado === 'atencion' ? 'dot-warn' : 'dot-critico'); }
-          else if(i <= semanaActual){ cls = 'dot-pending'; }
-          dots.push(`<span class="dot ${cls}"></span>`);
+          else if(i <= semanasTranscurridas){ cls = 'dot-pending'; }
+          dots.push(`<span class="dot ${cls}" title="Semana ${labelDot}"></span>`);
         }
         const pmrev = [u.pm_by, u.rev_by].filter(Boolean).join(' / ');
         return `<tr>
           <td><div class="unit-name">${u.unidad}</div><div class="unit-sub">${u.codigo || ''}</div></td>
           <td>${badgeTipoKickoff(u.tipo)}</td>
           <td>${u.grupo}</td>
-          <td>S${semanaActual}: ${fmtFechaCorta(u.fecha_kickoff)}</td>
+          <td>S${semanaInicioLabel}: ${fmtFechaCorta(u.fecha_kickoff)}</td>
           <td>${pmrev || '—'}</td>
           <td class="num">${ultimo ? (ultimo.reservas_lw ?? '—') + ' → ' + (ultimo.reservas_hoy ?? '—') : '—'}</td>
           <td>${badgeEstadoKickoff(ultimo ? ultimo.estado : null)}</td>
@@ -1168,8 +1201,7 @@
   function autoSemanaCheckin(){
     const id = document.getElementById('ckUnidad').value;
     if(!id) return;
-    const u = allKickoffUnits.find(x => x.id === id);
-    if(u) document.getElementById('ckSemana').value = Math.max(1, semanasDesde(u.fecha_kickoff));
+    document.getElementById('ckSemana').value = semanaDelAnio(new Date());
   }
 
   async function guardarCheckin(){
