@@ -167,6 +167,7 @@
   .dot-critico { background: #b3312c; }
   .dot-pending { background: #e4e1da; }
   .dot-future { background: transparent; border: 1px dashed #ddd8cc; }
+  .dot-obd { background: #cfcabb; border: 1px solid #b8b19c; }
 
   .footnote { font-size: 10.5px; color: #b4b0a4; margin-top: 8px; }
 
@@ -1122,12 +1123,19 @@
         const semanaInicioLabel = semanaDelAnio(inicioKickoff);
         const idxInicio = semanaIndexAbs(inicioKickoff);
         const idxHoy = semanaIndexAbs(new Date());
-        const semanasTranscurridas = idxHoy - idxInicio + 1;
         const ultimo = checkinsUnidad[checkinsUnidad.length - 1];
         const dots = [];
+        // Semana OBD (la de fecha_kickoff): no cuenta como progreso — pueden llevar solo un par de días.
+        const labelObd = semanaDelAnio(inicioKickoff);
+        const cObd = checkinsUnidad.find(x => x.semana_num === labelObd);
+        let clsObd = 'dot-obd';
+        if(cObd){ clsObd = cObd.estado === 'ok' ? 'dot-ok' : (cObd.estado === 'atencion' ? 'dot-warn' : 'dot-critico'); }
+        dots.push(`<span class="dot ${clsObd}" title="Semana ${labelObd} — OBD, no cuenta como progreso"></span>`);
+        // Las 12 semanas de progreso real arrancan la semana siguiente al OBD.
+        const semanasTranscurridas = idxHoy - idxInicio;
         for(let i=1; i<=12; i++){
           const fechaDot = new Date(inicioKickoff);
-          fechaDot.setDate(fechaDot.getDate() + (i-1)*7);
+          fechaDot.setDate(fechaDot.getDate() + i*7);
           const labelDot = semanaDelAnio(fechaDot);
           const c = checkinsUnidad.find(x => x.semana_num === labelDot);
           let cls = 'dot-future';
