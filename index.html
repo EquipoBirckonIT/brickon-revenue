@@ -353,19 +353,19 @@
       </div>
 
       <div class="kpi-row" id="proyKpiRow">
-        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo Agosto (portafolio)</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo mes actual (portafolio)</div></div>
         <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Unidades activas proyectadas</div></div>
-        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo Ago + Sep + Oct</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo 6 meses (trimestre actual + siguiente)</div></div>
         <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo total 2026</div></div>
       </div>
 
       <div class="card">
-        <div class="section-title"><div class="left">Objetivo por grupo — migrado de tu doc de Proyecciones 2026 <span class="count" id="proyGruposCount">0 grupos</span></div></div>
+        <div class="section-title"><div class="left">Objetivo por grupo — trimestre actual + siguiente (6 meses, se recalcula solo) <span class="count" id="proyGruposCount">0 grupos</span></div></div>
         <div class="scroll-x">
         <table>
-          <thead><tr><th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Obj. Ago</th><th class="num">Obj. Sep</th><th class="num">Obj. Oct</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
+          <thead><tr id="proyOverviewHead"><th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
           <tbody id="proyOverviewBody">
-            <tr><td colspan="8" style="text-align:center;color:#a8a498;">Cargando grupos…</td></tr>
+            <tr><td colspan="12" style="text-align:center;color:#a8a498;">Cargando grupos…</td></tr>
           </tbody>
         </table>
         </div>
@@ -836,42 +836,87 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-01';
   }
 
+  let allProyMensualVentana = [];
+
+  function ventanaMeses(){
+    // Ventana dinamica: trimestre actual + trimestre siguiente (6 meses), recalculada cada vez segun la fecha de hoy.
+    const hoy = new Date();
+    const mesHoy = hoy.getMonth() + 1;
+    const anioHoy = hoy.getFullYear();
+    const qStartMonth = Math.floor((mesHoy - 1) / 3) * 3 + 1;
+    const meses = [];
+    for(let i = 0; i < 6; i++){
+      let m = qStartMonth + i;
+      let a = anioHoy;
+      while(m > 12){ m -= 12; a += 1; }
+      meses.push({ anio: a, mes: m });
+    }
+    return meses;
+  }
+
   async function cargarProyecciones(){
-    const { data, error } = await sb.from('proy_grupos').select('*').order('grupo', {ascending:true});
-    if(error){ console.error(error); document.getElementById('proyOverviewBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#b3312c;">No se pudieron cargar los grupos — revisa la consola.</td></tr>'; return; }
+    const ventana = ventanaMeses();
+    const anios = [...new Set(ventana.map(v => v.anio))];
+    const [{ data, error }, { data: mensual, error: em }] = await Promise.all([
+      sb.from('proy_grupos').select('*').order('grupo', {ascending:true}),
+      sb.from('proy_mensual').select('grupo,anio,mes,revenue_mensual').in('anio', anios)
+    ]);
+    if(error || em){ console.error(error || em); document.getElementById('proyOverviewBody').innerHTML = '<tr><td colspan="12" style="text-align:center;color:#b3312c;">No se pudieron cargar los grupos — revisa la consola.</td></tr>'; return; }
     allProyGrupos = data || [];
+    allProyMensualVentana = mensual || [];
     renderProyOverview();
     cargarConsejo();
     cargarAjustesGlobal();
   }
 
   function renderProyOverview(){
+    const ventana = ventanaMeses();
+    const revenueDe = (grupo, anio, mes) => {
+      const row = allProyMensualVentana.find(m => m.grupo === grupo && m.anio === anio && m.mes === mes);
+      return row && row.revenue_mensual != null ? Number(row.revenue_mensual) : null;
+    };
     const activos = allProyGrupos.filter(g => g.estado !== 'terminado');
     const terminados = allProyGrupos.filter(g => g.estado === 'terminado');
+
+    const anioBase = ventana[0].anio;
+    const headRow = document.getElementById('proyOverviewHead');
+    headRow.innerHTML = '<th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th>' +
+      ventana.map(v => `<th class="num">${MESES_NOMBRE[v.mes-1].slice(0,3)}${v.anio !== anioBase ? " '" + String(v.anio).slice(2) : ''}</th>`).join('') +
+      '<th class="num">Total 6m</th><th class="num">Total 2026</th><th>Notas</th>';
 
     const tbody = document.getElementById('proyOverviewBody');
     document.getElementById('proyGruposCount').textContent = activos.length + ' grupos';
     if(activos.length === 0){
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a8a498;">Aún no hay grupos cargados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#a8a498;">Aún no hay grupos cargados.</td></tr>';
     } else {
-      tbody.innerHTML = activos.map(g => `<tr>
+      tbody.innerHTML = activos.map(g => {
+        const valores = ventana.map(v => revenueDe(g.grupo, v.anio, v.mes));
+        const total6m = valores.reduce((a,v) => a + (v || 0), 0);
+        return `<tr>
         <td>${g.especialista || '—'}</td>
         <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a></td>
         <td class="num">${g.unidades_activas ?? '—'}</td>
-        <td class="num">${fmtMoney(g.obj_ago)}</td>
-        <td class="num">${fmtMoney(g.obj_sep)}</td>
-        <td class="num">${fmtMoney(g.obj_oct)}</td>
+        ${valores.map(v => `<td class="num">${v === null ? '—' : fmtMoney(v)}</td>`).join('')}
+        <td class="num">${fmtMoney(total6m)}</td>
         <td class="num">${fmtMoney(g.total_2026)}</td>
         <td>${g.notas || '—'}</td>
-      </tr>`).join('');
+      </tr>`;
+      }).join('');
     }
     const sum = (key) => activos.reduce((a,g) => a + (Number(g[key]) || 0), 0);
+    const sumMesActual = activos.reduce((a,g) => a + (revenueDe(g.grupo, ventana[0].anio, ventana[0].mes) || 0), 0);
+    const sumVentana = activos.reduce((a,g) => a + ventana.reduce((s,v) => s + (revenueDe(g.grupo, v.anio, v.mes) || 0), 0), 0);
     const kpis = document.querySelectorAll('#proyKpiRow .kpi-value');
+    const labels = document.querySelectorAll('#proyKpiRow .kpi-label');
     if(kpis.length === 4){
-      kpis[0].textContent = fmtMoney(sum('obj_ago'));
+      kpis[0].textContent = fmtMoney(sumMesActual);
       kpis[1].textContent = sum('unidades_activas');
-      kpis[2].textContent = fmtMoney(sum('obj_ago') + sum('obj_sep') + sum('obj_oct'));
+      kpis[2].textContent = fmtMoney(sumVentana);
       kpis[3].textContent = fmtMoney(sum('total_2026'));
+    }
+    if(labels.length === 4){
+      labels[0].textContent = 'Objetivo ' + MESES_NOMBRE[ventana[0].mes-1] + ' (portafolio)';
+      labels[2].textContent = 'Objetivo ' + MESES_NOMBRE[ventana[0].mes-1] + '–' + MESES_NOMBRE[ventana[5].mes-1] + ' (6 meses)';
     }
 
     document.getElementById('proyTerminadosCount').textContent = terminados.length + ' grupos';
