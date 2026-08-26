@@ -515,8 +515,7 @@
     <div class="card">
       <div class="section-title"><div class="left">+ Mapear unidad nueva</div></div>
       <div class="new-unit-form">
-        <div><label>Unidad</label><input type="text" id="koUnidad" placeholder="Ej. Artila 512"></div>
-        <div><label>Código interno</label><input type="text" id="koCodigo" placeholder="Ej. BKAT020"></div>
+        <div><label>Código de la unidad</label><input type="text" id="koCodigo" placeholder="Ej. BKAT020"></div>
         <div><label>Grupo / Partner</label><input type="text" id="koGrupo" placeholder="Ej. Artila"></div>
         <div><label>Tipo</label>
           <select id="koTipo"><option>Real unit</option><option>Virtual</option><option>Relanzamiento</option></select>
@@ -537,7 +536,7 @@
       <table>
         <thead>
           <tr>
-            <th>Unidad</th><th>Tipo</th><th>Grupo</th><th>Semana OBD</th><th>PM / Rev by</th>
+            <th>Código</th><th>Tipo</th><th>Grupo</th><th>Semana OBD</th><th>PM / Rev by</th>
             <th class="num">Res. LW → Hoy</th><th>Estado</th><th>Comentarios</th><th>Progreso (12 sem.)</th><th>Acción</th>
           </tr>
         </thead>
@@ -1298,7 +1297,7 @@
 
     const sel = document.getElementById('ckUnidad');
     const prevVal = sel.value;
-    sel.innerHTML = '<option value="">Selecciona unidad…</option>' + activas.map(u => `<option value="${u.id}">${u.unidad} — ${u.grupo}</option>`).join('');
+    sel.innerHTML = '<option value="">Selecciona unidad…</option>' + activas.map(u => `<option value="${u.id}">${u.codigo} — ${u.grupo}</option>`).join('');
     if(prevVal) sel.value = prevVal;
 
     if(activas.length === 0){
@@ -1342,7 +1341,7 @@
             ? '<div><span class="badge b-media" title="Esta es su última semana de kickoff — revisar antes del jueves">🔔 Última semana</span></div>'
             : '<div><span class="badge b-alta" title="Ya pasó su última semana — debería graduarse">⚠️ Vencida</span></div>';
         return `<tr>
-          <td><div class="unit-name">${u.unidad}</div><div class="unit-sub">${u.codigo || ''}</div>${aviso}</td>
+          <td><div class="unit-name">${u.codigo}</div>${aviso}</td>
           <td>${badgeTipoKickoff(u.tipo)}</td>
           <td>${u.grupo}</td>
           <td>S${semanaInicioLabel}: ${fmtFechaCorta(u.fecha_kickoff)}</td>
@@ -1384,18 +1383,16 @@
   }
 
   async function guardarUnidadKickoff(){
-    const unidad = document.getElementById('koUnidad').value.trim();
     const codigo = document.getElementById('koCodigo').value.trim();
     const grupo = document.getElementById('koGrupo').value.trim();
     const tipo = document.getElementById('koTipo').value;
     const fecha = document.getElementById('koFecha').value;
     const pmrev = document.getElementById('koPmRev').value.trim();
-    if(!unidad || !grupo || !fecha){ alert('Completa al menos Unidad, Grupo y Fecha de kickoff.'); return; }
+    if(!codigo || !grupo || !fecha){ alert('Completa al menos Código, Grupo y Fecha de kickoff.'); return; }
     let pm_by = pmrev, rev_by = '';
     if(pmrev.includes('/')){ const parts = pmrev.split('/'); pm_by = parts[0].trim(); rev_by = parts.slice(1).join('/').trim(); }
-    const { error } = await sb.from('kickoff_units').insert({ unidad, codigo: codigo || null, grupo, tipo, fecha_kickoff: fecha, pm_by: pm_by || null, rev_by: rev_by || null });
+    const { error } = await sb.from('kickoff_units').insert({ codigo, grupo, tipo, fecha_kickoff: fecha, pm_by: pm_by || null, rev_by: rev_by || null });
     if(error){ alert('No se pudo guardar la unidad: ' + error.message); return; }
-    document.getElementById('koUnidad').value='';
     document.getElementById('koCodigo').value='';
     document.getElementById('koGrupo').value='';
     document.getElementById('koFecha').value='';
@@ -1472,7 +1469,7 @@
     if(!u) return;
     document.querySelector('[data-tab="acciones"]').click();
     const input = document.getElementById('accInput');
-    input.value = u.unidad + ' — ';
+    input.value = u.codigo + ' — ';
     if(PARTNERS_CONOCIDOS.includes(u.grupo)){
       document.querySelectorAll('#msPanel input').forEach(c => { c.checked = (c.value === u.grupo); });
       closeMs();
