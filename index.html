@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Revenue — Brickon (Mockup)</title>
+<title>Revenue — Brickon</title>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -169,6 +169,14 @@
   .dot-future { background: transparent; border: 1px dashed #ddd8cc; }
   .dot-obd { background: #cfcabb; border: 1px solid #b8b19c; }
 
+  .nota-cell { max-width: 150px; position: relative; }
+  .nota-texto { font-size: 11px; color: #1f2430; line-height: 1.3; word-break: break-word; padding-right: 16px; }
+  .nota-fecha { font-size: 9px; color: #a8a498; margin-top: 2px; }
+  .nota-edit-btn, .nota-save-btn { position: absolute; top: 0; right: 0; background: none; border: none; cursor: pointer; font-size: 11px; padding: 1px 2px; line-height: 1; }
+  .nota-edit textarea { width: 130px; font-size: 11px; font-family: inherit; border: 1px solid #ccc; border-radius: 4px; padding: 3px 4px; resize: vertical; min-height: 40px; }
+  .nota-edit { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+  .nota-edit .nota-save-btn { position: static; font-size: 13px; background: #f0efe9; border-radius: 4px; padding: 1px 6px; }
+
   .footnote { font-size: 10.5px; color: #b4b0a4; margin-top: 8px; }
 
   .kick-summary { display: flex; gap: 24px; flex-wrap: wrap; }
@@ -198,7 +206,7 @@
         <div class="subtitle">Portafolio completo · vive dentro del portal interno de Brickon, junto a Salud Semanal, Tickets IT y BrickonIA</div>
       </div>
     </div>
-    <div class="mock-flag">Acciones + Kickoff + Proyecciones: en vivo · Real vs Proy.: mockup</div>
+    <div class="mock-flag" style="background:#dcf0e0;border-color:#b7ddc0;color:#2e7d4f;">Todas las pestañas en vivo — datos reales de Supabase</div>
   </div>
 
   <div class="filters">
@@ -353,6 +361,23 @@
         </div>
         <p class="footnote">Click en el nombre del grupo para abrir su Detalle (proyección, historial y ajustar). Datos reales — guardados en Supabase.</p>
       </div>
+
+      <div class="card">
+        <div class="section-title">
+          <div class="left">
+            <span class="btn-link" style="cursor:pointer;" onclick="togglePanel('proyTerminadosPanel')">▾ Terminados <span class="count" id="proyTerminadosCount">0 grupos</span></span>
+          </div>
+        </div>
+        <div class="hist-panel" id="proyTerminadosPanel">
+          <div class="scroll-x">
+          <table>
+            <thead><tr><th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026 (histórico)</th><th>Notas</th></tr></thead>
+            <tbody id="proyTerminadosBody"></tbody>
+          </table>
+          </div>
+          <p class="footnote">Grupos en offboarding / offboarded. Se conservan como histórico y no cuentan en los KPIs ni en la lista activa.</p>
+        </div>
+      </div>
     </div>
 
     <!-- SUB 2: DETALLE POR GRUPO -->
@@ -435,35 +460,28 @@
   <!-- ===================== TAB 3: REAL VS PROYECCIÓN ===================== -->
   <div class="view" id="vs">
 
-    <div class="kpi-row">
-      <div class="kpi-card"><div class="kpi-label">Revenue — Jul 2026</div><div class="kpi-value" style="font-size:19px;">$4.82M <span style="font-size:11px;color:#8a8677;font-weight:600;">/ $5.1M obj.</span></div><div class="kpi-delta down">▼ 94% del objetivo</div></div>
-      <div class="kpi-card"><div class="kpi-label">Ocupación — Jul 2026</div><div class="kpi-value" style="font-size:19px;">71% <span style="font-size:11px;color:#8a8677;font-weight:600;">/ 76% obj.</span></div><div class="kpi-delta down">▼ -5pts vs objetivo</div></div>
-      <div class="kpi-card"><div class="kpi-label">ADR — Jul 2026</div><div class="kpi-value" style="font-size:19px;">$1,890 <span style="font-size:11px;color:#8a8677;font-weight:600;">/ $1,820 obj.</span></div><div class="kpi-delta up">▲ 104% del objetivo</div></div>
-      <div class="kpi-card"><div class="kpi-label">Unidades activas</div><div class="kpi-value" style="font-size:19px;">396 <span style="font-size:11px;color:#8a8677;font-weight:600;">/ 400 obj.</span></div><div class="kpi-delta flat">= 99% del objetivo</div></div>
+    <div class="kpi-row" id="vsKpiRow">
+      <div class="kpi-card"><div class="kpi-label" id="vsRevLabel">Revenue — mes actual</div><div class="kpi-value" style="font-size:19px;">
+          <span id="vsRevReal">—</span> <span style="font-size:11px;color:#8a8677;font-weight:600;">/ <span id="vsRevObj">—</span> obj.</span></div><div class="kpi-delta" id="vsRevDelta">—</div></div>
+      <div class="kpi-card"><div class="kpi-label" id="vsOccLabel">Ocupación — mes actual</div><div class="kpi-value" style="font-size:19px;">
+          <span id="vsOccReal">—</span> <span style="font-size:11px;color:#8a8677;font-weight:600;">/ <span id="vsOccObj">—</span> obj.</span></div><div class="kpi-delta" id="vsOccDelta">—</div></div>
+      <div class="kpi-card"><div class="kpi-label" id="vsAdrLabel">ADR — mes actual</div><div class="kpi-value" style="font-size:19px;">
+          <span id="vsAdrReal">—</span> <span style="font-size:11px;color:#8a8677;font-weight:600;">/ <span id="vsAdrObj">—</span> obj.</span></div><div class="kpi-delta" id="vsAdrDelta">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Unidades activas</div><div class="kpi-value" style="font-size:19px;">
+          <span id="vsUnitReal">—</span> <span style="font-size:11px;color:#8a8677;font-weight:600;">/ <span id="vsUnitObj">—</span> obj.</span></div><div class="kpi-delta" id="vsUnitDelta">—</div></div>
     </div>
 
     <div class="card">
-      <div class="section-title"><div class="left">Cumplimiento por grupo — mes actual</div></div>
+      <div class="section-title"><div class="left">Cumplimiento por grupo — <span id="vsMesTituloTabla">mes actual</span></div></div>
       <div class="scroll-x">
       <table>
         <thead><tr><th>Grupo</th><th class="num">Revenue real</th><th class="num">Revenue objetivo</th><th class="num">% cumplimiento</th><th>Estatus</th><th>Acciones</th></tr></thead>
-        <tbody>
-          <tr><td class="unit-name">Choapan</td><td class="num">$705,000</td><td class="num">$732,720</td><td class="num">96%</td><td><span class="badge b-baja">Cerca</span></td>
-            <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('Choapan')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('Choapan')">🔁 Regenerar</button></td></tr>
-          <tr><td class="unit-name">Corasol</td><td class="num">$650,000</td><td class="num">$727,400</td><td class="num">89%</td><td><span class="badge b-alta">Abajo</span></td>
-            <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('Corasol')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('Corasol')">🔁 Regenerar</button></td></tr>
-          <tr><td class="unit-name">Zaterra</td><td class="num">$308,000</td><td class="num">$317,400</td><td class="num">97%</td><td><span class="badge b-baja">Cerca</span></td>
-            <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('Zaterra')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('Zaterra')">🔁 Regenerar</button></td></tr>
-          <tr><td class="unit-name">Aurora</td><td class="num">$402,000</td><td class="num">$472,500</td><td class="num">85%</td><td><span class="badge b-alta">Abajo</span></td>
-            <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('Aurora')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('Aurora')">🔁 Regenerar</button></td></tr>
-          <tr><td class="unit-name">B2O_RivieraMaya</td><td class="num">$358,000</td><td class="num">$364,400</td><td class="num">98%</td><td><span class="badge b-baja">Cerca</span></td>
-            <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('B2O_RivieraMaya')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('B2O_RivieraMaya')">🔁 Regenerar</button></td></tr>
-          <tr><td class="unit-name">Artila</td><td class="num">$1,690,000</td><td class="num">$1,765,859</td><td class="num">96%</td><td><span class="badge b-baja">Cerca</span></td>
-            <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('Artila')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('Artila')">🔁 Regenerar</button></td></tr>
+        <tbody id="vsBody">
+          <tr><td colspan="6" style="text-align:center;color:#a8a498;">Cargando datos reales…</td></tr>
         </tbody>
       </table>
       </div>
-      <p class="footnote">"Sugerir" y "Regenerar" son por partner — cada uno abre su propio panel abajo, no una sugerencia genérica del portafolio completo.</p>
+      <p class="footnote">Revenue real: reservas confirmadas de Guesty, prorateadas noche por noche. Revenue objetivo: proyección capturada en la pestaña Proyecciones. "Sugerir" y "Regenerar" son por grupo — cada uno abre su propio panel abajo.</p>
     </div>
 
     <div class="card ai-panel" id="aiPanel">
@@ -653,7 +671,7 @@
     return true;
   }
 
-  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); });
+  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); cargarRealVsProy(); });
 
   // ---------- tabs principales ----------
   document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
@@ -819,12 +837,15 @@
   }
 
   function renderProyOverview(){
+    const activos = allProyGrupos.filter(g => g.estado !== 'terminado');
+    const terminados = allProyGrupos.filter(g => g.estado === 'terminado');
+
     const tbody = document.getElementById('proyOverviewBody');
-    document.getElementById('proyGruposCount').textContent = allProyGrupos.length + ' grupos';
-    if(allProyGrupos.length === 0){
+    document.getElementById('proyGruposCount').textContent = activos.length + ' grupos';
+    if(activos.length === 0){
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#a8a498;">Aún no hay grupos cargados.</td></tr>';
     } else {
-      tbody.innerHTML = allProyGrupos.map(g => `<tr>
+      tbody.innerHTML = activos.map(g => `<tr>
         <td>${g.especialista || '—'}</td>
         <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a></td>
         <td class="num">${g.unidades_activas ?? '—'}</td>
@@ -835,7 +856,7 @@
         <td>${g.notas || '—'}</td>
       </tr>`).join('');
     }
-    const sum = (key) => allProyGrupos.reduce((a,g) => a + (Number(g[key]) || 0), 0);
+    const sum = (key) => activos.reduce((a,g) => a + (Number(g[key]) || 0), 0);
     const kpis = document.querySelectorAll('#proyKpiRow .kpi-value');
     if(kpis.length === 4){
       kpis[0].textContent = fmtMoney(sum('obj_ago'));
@@ -843,6 +864,18 @@
       kpis[2].textContent = fmtMoney(sum('obj_ago') + sum('obj_sep') + sum('obj_oct'));
       kpis[3].textContent = fmtMoney(sum('total_2026'));
     }
+
+    document.getElementById('proyTerminadosCount').textContent = terminados.length + ' grupos';
+    const tbodyT = document.getElementById('proyTerminadosBody');
+    tbodyT.innerHTML = terminados.length === 0
+      ? '<tr><td colspan="5" style="text-align:center;color:#a8a498;">Sin grupos terminados.</td></tr>'
+      : terminados.map(g => `<tr>
+        <td>${g.especialista || '—'}</td>
+        <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a></td>
+        <td class="num">${g.unidades_activas ?? '—'}</td>
+        <td class="num">${fmtMoney(g.total_2026)}</td>
+        <td>${g.notas || '—'}</td>
+      </tr>`).join('');
   }
 
   async function cargarConsejo(){
@@ -1027,6 +1060,129 @@
   }
 
   // ---------- REAL VS PROYECCIÓN ----------
+  let allRealVsProy = [];
+
+  function estatusCumplimiento(pct){
+    if(pct === null) return {label:'—', cls:''};
+    if(pct >= 100) return {label:'Arriba', cls:'b-baja'};
+    if(pct >= 90) return {label:'Cerca', cls:'b-baja'};
+    if(pct >= 70) return {label:'Atención', cls:'b-media'};
+    return {label:'Abajo', cls:'b-alta'};
+  }
+
+  function deltaHtml(pct, sufijo){
+    if(pct === null) return {cls:'flat', html:'—'};
+    if(pct >= 100) return {cls:'up', html:'▲ ' + Math.round(pct) + sufijo};
+    if(pct >= 90) return {cls:'flat', html:'▬ ' + Math.round(pct) + sufijo};
+    return {cls:'down', html:'▼ ' + Math.round(pct) + sufijo};
+  }
+
+  async function cargarRealVsProy(){
+    // Usamos el último mes ya cerrado (no el mes en curso): un mes a medias
+    // siempre se ve con ocupación/revenue bajísimos porque todavía le faltan
+    // días por reservarse, y no es comparable contra un objetivo de mes completo.
+    const now = new Date();
+    const mesAnteriorDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const anio = mesAnteriorDate.getFullYear();
+    const mes = mesAnteriorDate.getMonth() + 1;
+    document.getElementById('vsMesTituloTabla').textContent = MESES_NOMBRE[mes-1] + ' ' + anio + ' (último mes cerrado)';
+    ['vsRevLabel','vsOccLabel','vsAdrLabel'].forEach(id => {
+      const base = document.getElementById(id).textContent.split(' — ')[0];
+      document.getElementById(id).textContent = base + ' — ' + MESES_NOMBRE[mes-1] + ' ' + anio;
+    });
+
+    const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }] = await Promise.all([
+      sb.from('real_mensual').select('*').eq('anio', anio).eq('mes', mes),
+      sb.from('proy_mensual').select('*').eq('anio', anio).eq('mes', mes),
+      sb.from('proy_grupos').select('grupo, unidades_activas'),
+      sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true)
+    ]);
+
+    const tbody = document.getElementById('vsBody');
+    if(er || ep){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b3312c;">No se pudieron cargar los datos reales — revisa la consola.</td></tr>';
+      console.error(er || ep);
+      return;
+    }
+
+    const realByGrupo = {}; (real || []).forEach(r => realByGrupo[r.grupo] = r);
+    const proyByGrupo = {}; (proy || []).forEach(r => proyByGrupo[r.grupo] = r);
+    const unidadesObjByGrupo = {}; (grupos || []).forEach(g => unidadesObjByGrupo[g.grupo] = g.unidades_activas);
+
+    const todosLosGrupos = Array.from(new Set([...Object.keys(realByGrupo), ...Object.keys(proyByGrupo)]));
+
+    allRealVsProy = todosLosGrupos.map(grupo => {
+      const r = realByGrupo[grupo];
+      const p = proyByGrupo[grupo];
+      const revReal = r ? Number(r.revenue_mensual) || 0 : 0;
+      const revObj = p ? Number(p.revenue_mensual) || 0 : null;
+      const pctCump = (revObj && revObj > 0) ? (revReal / revObj) * 100 : null;
+      return { grupo, revReal, revObj, pctCump, real: r || null, proy: p || null };
+    }).sort((a,b) => {
+      const pa = a.pctCump === null ? 999 : a.pctCump;
+      const pb = b.pctCump === null ? 999 : b.pctCump;
+      return pa - pb;
+    });
+
+    if(allRealVsProy.length === 0){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a8a498;">Sin datos reales ni proyectados para este mes todavía.</td></tr>';
+    } else {
+      tbody.innerHTML = allRealVsProy.map(row => {
+        const est = estatusCumplimiento(row.pctCump);
+        const grupoEsc = row.grupo.replace(/'/g,"\\'");
+        return `<tr>
+          <td class="unit-name">${row.grupo}</td>
+          <td class="num">${fmtMoney(row.revReal)}</td>
+          <td class="num">${row.revObj !== null ? fmtMoney(row.revObj) : '—'}</td>
+          <td class="num">${row.pctCump !== null ? Math.round(row.pctCump) + '%' : '—'}</td>
+          <td>${est.label === '—' ? '—' : `<span class="badge ${est.cls}">${est.label}</span>`}</td>
+          <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('${grupoEsc}')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('${grupoEsc}')">🔁 Regenerar</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ---- KPIs agregados ----
+    const sumReal = (key) => (real || []).reduce((a,r) => a + (Number(r[key]) || 0), 0);
+    const sumProy = (key) => (proy || []).reduce((a,r) => a + (Number(r[key]) || 0), 0);
+
+    const revRealTotal = sumReal('revenue_mensual');
+    const revObjTotal = sumProy('revenue_mensual');
+    const nochesResReal = sumReal('noches_reservadas');
+    const nochesDispReal = sumReal('noches_disponibles');
+    const nochesResProy = sumProy('noches_reservadas');
+    const nochesDispProy = sumProy('noches_disponibles');
+    const occReal = nochesDispReal > 0 ? (nochesResReal / nochesDispReal) * 100 : null;
+    const occObj = nochesDispProy > 0 ? (nochesResProy / nochesDispProy) * 100 : null;
+    const adrReal = nochesResReal > 0 ? revRealTotal / nochesResReal : null;
+    const adrObj = nochesResProy > 0 ? revObjTotal / nochesResProy : null;
+    const unidadesRealTotal = (listingsActivos || []).length;
+    const unidadesObjTotal = Object.values(unidadesObjByGrupo).reduce((a,v) => a + (Number(v) || 0), 0);
+
+    document.getElementById('vsRevReal').textContent = fmtMoney(revRealTotal);
+    document.getElementById('vsRevObj').textContent = fmtMoney(revObjTotal);
+    const dRev = deltaHtml(revObjTotal > 0 ? (revRealTotal/revObjTotal)*100 : null, '% del objetivo');
+    document.getElementById('vsRevDelta').className = 'kpi-delta ' + dRev.cls;
+    document.getElementById('vsRevDelta').innerHTML = dRev.html;
+
+    document.getElementById('vsOccReal').textContent = occReal !== null ? Math.round(occReal) + '%' : '—';
+    document.getElementById('vsOccObj').textContent = occObj !== null ? Math.round(occObj) + '%' : '—';
+    const dOcc = deltaHtml(occObj > 0 ? (occReal/occObj)*100 : null, '% del objetivo');
+    document.getElementById('vsOccDelta').className = 'kpi-delta ' + dOcc.cls;
+    document.getElementById('vsOccDelta').innerHTML = dOcc.html;
+
+    document.getElementById('vsAdrReal').textContent = adrReal !== null ? fmtMoney(adrReal) : '—';
+    document.getElementById('vsAdrObj').textContent = adrObj !== null ? fmtMoney(adrObj) : '—';
+    const dAdr = deltaHtml(adrObj > 0 ? (adrReal/adrObj)*100 : null, '% del objetivo');
+    document.getElementById('vsAdrDelta').className = 'kpi-delta ' + dAdr.cls;
+    document.getElementById('vsAdrDelta').innerHTML = dAdr.html;
+
+    document.getElementById('vsUnitReal').textContent = unidadesRealTotal;
+    document.getElementById('vsUnitObj').textContent = unidadesObjTotal || '—';
+    const dUnit = deltaHtml(unidadesObjTotal > 0 ? (unidadesRealTotal/unidadesObjTotal)*100 : null, '% del objetivo');
+    document.getElementById('vsUnitDelta').className = 'kpi-delta ' + dUnit.cls;
+    document.getElementById('vsUnitDelta').innerHTML = dUnit.html;
+  }
+
   function regenerar(){
     const grupo = document.getElementById('regenPanel').dataset.grupo || 'este grupo';
     const confirmEl = document.getElementById('regenConfirm');
@@ -1144,15 +1300,25 @@
           dots.push(`<span class="dot ${cls}" title="Semana ${labelDot}"></span>`);
         }
         const pmrev = [u.pm_by, u.rev_by].filter(Boolean).join(' / ');
+        // La campanita se calcula por dias, no por bucket de semana: arranca el jueves
+        // en que inicia la semana 12 y se queda puesta hasta el jueves siguiente (su dia
+        // de revision semanal) incluido; el viernes ya pasa a "Vencida".
+        const fechaUltimaSemana = new Date(inicioKickoff);
+        fechaUltimaSemana.setDate(fechaUltimaSemana.getDate() + 12*7);
+        const diasDesdeUltima = Math.round((new Date().setHours(0,0,0,0) - fechaUltimaSemana.setHours(0,0,0,0)) / (24*3600*1000));
+        const aviso = diasDesdeUltima < 0 ? ''
+          : diasDesdeUltima <= 7
+            ? '<div><span class="badge b-media" title="Esta es su última semana de kickoff — revisar antes del jueves">🔔 Última semana</span></div>'
+            : '<div><span class="badge b-alta" title="Ya pasó su última semana — debería graduarse">⚠️ Vencida</span></div>';
         return `<tr>
-          <td><div class="unit-name">${u.unidad}</div><div class="unit-sub">${u.codigo || ''}</div></td>
+          <td><div class="unit-name">${u.unidad}</div><div class="unit-sub">${u.codigo || ''}</div>${aviso}</td>
           <td>${badgeTipoKickoff(u.tipo)}</td>
           <td>${u.grupo}</td>
           <td>S${semanaInicioLabel}: ${fmtFechaCorta(u.fecha_kickoff)}</td>
           <td>${pmrev || '—'}</td>
           <td class="num">${ultimo ? (ultimo.reservas_lw ?? '—') + ' → ' + (ultimo.reservas_hoy ?? '—') : '—'}</td>
           <td>${badgeEstadoKickoff(ultimo ? ultimo.estado : null)}</td>
-          <td>${ultimo && ultimo.comentario ? ultimo.comentario : '—'}</td>
+          <td>${celdaNotaKickoff(u)}</td>
           <td><div class="progress-dots">${dots.join('')}</div></td>
           <td style="white-space:nowrap;">
             <button class="btn-ghost btn-sm" onclick="crearAccionDesdeKickoffId('${u.id}')">+ Acción</button>
@@ -1236,6 +1402,37 @@
   async function graduarUnidad(id){
     const { error } = await sb.from('kickoff_units').update({ activo: false }).eq('id', id);
     if(error){ alert('No se pudo actualizar: ' + error.message); return; }
+    await cargarKickoff();
+  }
+
+  function celdaNotaKickoff(u){
+    const texto = u.nota_actual ? u.nota_actual.replace(/</g,'&lt;') : '<span style="color:#a8a498;">—</span>';
+    const fecha = u.nota_actual_at ? fmtFechaCorta(u.nota_actual_at.slice(0,10)) : null;
+    return `<div class="nota-cell" id="notaCell-${u.id}">
+      <div class="nota-texto">${texto}</div>
+      ${fecha ? `<div class="nota-fecha">act. ${fecha}</div>` : ''}
+      <button class="nota-edit-btn" title="Editar comentario" onclick="editarNotaKickoff('${u.id}')">✏️</button>
+    </div>`;
+  }
+
+  function editarNotaKickoff(id){
+    const u = allKickoffUnits.find(x => x.id === id);
+    const cell = document.getElementById('notaCell-' + id);
+    if(!u || !cell) return;
+    const valorActual = (u.nota_actual || '').replace(/"/g,'&quot;');
+    cell.innerHTML = `<div class="nota-edit">
+      <textarea id="notaInput-${id}">${u.nota_actual || ''}</textarea>
+      <button class="nota-save-btn" title="Guardar" onclick="guardarNotaKickoff('${id}')">💾 Guardar</button>
+    </div>`;
+    document.getElementById('notaInput-' + id).focus();
+  }
+
+  async function guardarNotaKickoff(id){
+    const input = document.getElementById('notaInput-' + id);
+    if(!input) return;
+    const valor = input.value.trim();
+    const { error } = await sb.from('kickoff_units').update({ nota_actual: valor || null, nota_actual_at: new Date().toISOString() }).eq('id', id);
+    if(error){ alert('No se pudo guardar el comentario: ' + error.message); return; }
     await cargarKickoff();
   }
 
