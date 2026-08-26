@@ -54,6 +54,10 @@
   .kpi-card { background: #fff; border: 1px solid #e4e1da; border-radius: 12px; padding: 16px 18px; position: relative; }
   .kpi-value { font-size: 26px; font-weight: 700; color: #1f2430; }
   .kpi-label { font-size: 12px; color: #8a8677; margin-top: 4px; }
+  #proyKpiRow { grid-template-columns: repeat(5, 1fr); }
+  #proyKpiRow .kpi-card { padding: 10px 12px; }
+  #proyKpiRow .kpi-value { font-size: 18px; }
+  #proyKpiRow .kpi-label { font-size: 9.5px; line-height: 1.25; }
   .kpi-delta { font-size: 11px; font-weight: 600; margin-top: 6px; }
   .up { color: #2e7d4f; } .down { color: #b3312c; } .flat { color: #8a8677; }
   .kpi-edit-btn { position: absolute; top: 12px; right: 12px; background: #faf9f6; border: 1px solid #e4e1da; border-radius: 6px; font-size: 11px; padding: 3px 6px; cursor: pointer; }
@@ -363,9 +367,10 @@
       </div>
 
       <div class="kpi-row" id="proyKpiRow">
-        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo mes actual (portafolio)</div></div>
         <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Unidades activas proyectadas</div></div>
-        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo 6 meses (trimestre actual + siguiente)</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo mes actual (portafolio)</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo trimestre actual (portafolio)</div></div>
+        <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo 6 meses</div></div>
         <div class="kpi-card"><div class="kpi-value">—</div><div class="kpi-label">Objetivo total 2026</div></div>
       </div>
 
@@ -928,20 +933,28 @@
       </tr>`;
       }).join('');
     }
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+    const mesActual = { anio: anioActual, mes: hoy.getMonth() + 1 };
+    const trimestreActual = ventana.slice(0, 3); // ventana ya arranca en el trimestre actual
     const sum = (key) => activos.reduce((a,g) => a + (Number(g[key]) || 0), 0);
-    const sumMesActual = activos.reduce((a,g) => a + (revenueDe(g.grupo, ventana[0].anio, ventana[0].mes) || 0), 0);
+    const sumMesActual = activos.reduce((a,g) => a + (revenueDe(g.grupo, mesActual.anio, mesActual.mes) || 0), 0);
+    const sumTrimestre = activos.reduce((a,g) => a + trimestreActual.reduce((s,v) => s + (revenueDe(g.grupo, v.anio, v.mes) || 0), 0), 0);
     const sumVentana = activos.reduce((a,g) => a + ventana.reduce((s,v) => s + (revenueDe(g.grupo, v.anio, v.mes) || 0), 0), 0);
     const kpis = document.querySelectorAll('#proyKpiRow .kpi-value');
     const labels = document.querySelectorAll('#proyKpiRow .kpi-label');
-    if(kpis.length === 4){
-      kpis[0].textContent = fmtMoney(sumMesActual);
-      kpis[1].textContent = sum('unidades_activas');
-      kpis[2].textContent = fmtMoney(sumVentana);
-      kpis[3].textContent = fmtMoney(sum('total_2026'));
+    if(kpis.length === 5){
+      kpis[0].textContent = sum('unidades_activas');
+      kpis[1].textContent = fmtMoney(sumMesActual);
+      kpis[2].textContent = fmtMoney(sumTrimestre);
+      kpis[3].textContent = fmtMoney(sumVentana);
+      kpis[4].textContent = fmtMoney(sum('total_2026'));
     }
-    if(labels.length === 4){
-      labels[0].textContent = 'Objetivo ' + MESES_NOMBRE[ventana[0].mes-1] + ' (portafolio)';
-      labels[2].textContent = 'Objetivo ' + MESES_NOMBRE[ventana[0].mes-1] + '–' + MESES_NOMBRE[ventana[5].mes-1] + ' (6 meses)';
+    if(labels.length === 5){
+      labels[1].textContent = 'Objetivo ' + MESES_NOMBRE[mesActual.mes-1] + ' (portafolio)';
+      labels[2].textContent = 'Objetivo ' + MESES_NOMBRE[trimestreActual[0].mes-1] + '–' + MESES_NOMBRE[trimestreActual[2].mes-1] + ' (portafolio)';
+      labels[3].textContent = 'Objetivo ' + MESES_NOMBRE[ventana[0].mes-1] + '–' + MESES_NOMBRE[ventana[5].mes-1] + ' (6 meses)';
+      labels[4].textContent = 'Objetivo total ' + anioActual;
     }
 
     document.getElementById('proyTerminadosCount').textContent = terminados.length + ' grupos';
