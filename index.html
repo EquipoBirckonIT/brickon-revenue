@@ -332,19 +332,6 @@
       <p class="footnote">Filtra cualquier columna arriba (partner, texto de la acción, hecha/no, etc). Las filas ya marcadas como hechas pierden el botón de eliminar y quedan como historial fijo. Datos reales — guardados en Supabase.</p>
     </div>
 
-    <div class="card">
-      <div class="section-title"><div class="left">📊 Cumplimiento del log</div></div>
-      <div class="kick-summary">
-        <div class="item"><div class="n" id="cumplHechas">—</div><div class="l">Hechas este mes</div></div>
-        <div class="item"><div class="n" id="cumplPendientes">—</div><div class="l">Pendientes esta semana</div></div>
-        <div class="item"><div class="n" id="cumplPartners">—</div><div class="l">Partners con acción activa (mes)</div></div>
-      </div>
-      <div style="margin-top:14px;">
-        <div class="section-title" style="margin-bottom:8px; font-size:12px;"><div class="left">⚠️ Partners sin ninguna acción esta semana</div></div>
-        <div class="chips-row" id="sinAccionChips">—</div>
-      </div>
-      <p class="footnote">Sirve para revisar en la junta semanal si de verdad no necesitan nada, o si se nos está pasando algo.</p>
-    </div>
   </div>
 
   <!-- ===================== TAB 2: PROYECCIONES ===================== -->
@@ -695,23 +682,7 @@
   }
 
   function actualizarCumplimiento(){
-    const inicioSemana = inicioDeSemana();
-    const inicioMes = inicioDeMes();
-    const delMes = allAcciones.filter(a => new Date(a.created_at) >= inicioMes);
-    const hechasMes = delMes.filter(a => a.hecha).length;
-    const pendientesSemana = allAcciones.filter(a => !a.hecha && new Date(a.created_at) >= inicioSemana).length;
-    const partnersMes = new Set(delMes.map(a => a.partner));
     document.getElementById('logCount').textContent = allAcciones.length + ' registrada' + (allAcciones.length === 1 ? '' : 's');
-    document.getElementById('cumplHechas').textContent = delMes.length ? (hechasMes + ' / ' + delMes.length) : '0 / 0';
-    document.getElementById('cumplPendientes').textContent = pendientesSemana;
-    document.getElementById('cumplPartners').textContent = partnersMes.size;
-
-    const partnersEstaSemana = new Set(allAcciones.filter(a => new Date(a.created_at) >= inicioSemana).map(a => a.partner));
-    const sinAccion = PARTNERS_CONOCIDOS.filter(p => !partnersEstaSemana.has(p));
-    const chipsWrap = document.getElementById('sinAccionChips');
-    chipsWrap.innerHTML = sinAccion.length
-      ? sinAccion.map(p => `<span class="badge b-sinaccion">${p}</span>`).join('')
-      : '<span style="font-size:11px;color:#8a8677;">Todos los partners tienen al menos una acción esta semana ✅</span>';
   }
 
   async function marcarHecha(id){
