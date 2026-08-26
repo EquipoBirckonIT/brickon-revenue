@@ -177,6 +177,16 @@
   .nota-edit { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
   .nota-edit .nota-save-btn { position: static; font-size: 13px; background: #f0efe9; border-radius: 4px; padding: 1px 6px; }
 
+  .semaforo-cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .semaforo-dots { display: flex; gap: 5px; }
+  .semaforo-btn { width: 15px; height: 15px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; opacity: .45; transition: opacity .12s, transform .12s; }
+  .semaforo-btn:hover { opacity: .8; transform: scale(1.1); }
+  .semaforo-btn.sel { opacity: 1; border-color: #1f2430; }
+  .semaforo-btn.b-ok { background: #2e7d4f; }
+  .semaforo-btn.b-atencion { background: #d8ae4f; }
+  .semaforo-btn.b-critico { background: #b3312c; }
+  .semaforo-label { font-size: 9.5px; color: #a8a498; }
+
   .footnote { font-size: 10.5px; color: #b4b0a4; margin-top: 8px; }
 
   .kick-summary { display: flex; gap: 24px; flex-wrap: wrap; }
@@ -1239,6 +1249,27 @@
     return '<span class="badge b-progreso">Sin check-in</span>';
   }
 
+  function celdaSemaforoKickoff(u, checkinsUnidad){
+    // Semáforo manual: siempre actúa sobre la semana actual (la que se está revisando hoy),
+    // no sobre la última fila que exista — así se construye un rastro semana a semana.
+    const semanaActual = semanaDelAnio(new Date());
+    const cActual = checkinsUnidad.find(x => x.semana_num === semanaActual);
+    const estadoActual = cActual ? cActual.estado : null;
+    const btn = (val, title) => `<button class="semaforo-btn b-${val} ${estadoActual===val?'sel':''}" title="${title} — semana ${semanaActual}" onclick="setSemaforoKickoff('${u.id}', '${val}')"></button>`;
+    return `<div class="semaforo-cell">
+      <div class="semaforo-dots">${btn('ok','OK')}${btn('atencion','Atención')}${btn('critico','Crítico')}</div>
+      <div class="semaforo-label">${estadoActual ? 'S' + semanaActual + ' marcada' : 'S' + semanaActual + ' sin marcar'}</div>
+    </div>`;
+  }
+
+  async function setSemaforoKickoff(unitId, estado){
+    const semanaActual = semanaDelAnio(new Date());
+    const { error } = await sb.from('kickoff_checkins')
+      .upsert({ unit_id: unitId, semana_num: semanaActual, estado }, { onConflict: 'unit_id,semana_num' });
+    if(error){ alert('No se pudo guardar el semáforo: ' + error.message); return; }
+    await cargarKickoff();
+  }
+
   function badgeTipoKickoff(tipo){
     if(tipo === 'Real unit') return '<span class="badge b-real">Real unit</span>';
     if(tipo === 'Virtual') return '<span class="badge b-virtual">Virtual</span>';
@@ -1317,7 +1348,7 @@
           <td>S${semanaInicioLabel}: ${fmtFechaCorta(u.fecha_kickoff)}</td>
           <td>${pmrev || '—'}</td>
           <td class="num">${ultimo ? (ultimo.reservas_lw ?? '—') + ' → ' + (ultimo.reservas_hoy ?? '—') : '—'}</td>
-          <td>${badgeEstadoKickoff(ultimo ? ultimo.estado : null)}</td>
+          <td>${celdaSemaforoKickoff(u, checkinsUnidad)}</td>
           <td>${celdaNotaKickoff(u)}</td>
           <td><div class="progress-dots">${dots.join('')}</div></td>
           <td style="white-space:nowrap;">
