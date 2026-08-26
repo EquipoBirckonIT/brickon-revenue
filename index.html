@@ -91,6 +91,8 @@
   tbody tr:hover { background: #fafaf8; }
   .scroll-x { overflow-x: auto; }
   .unit-name { font-weight: 700; color: #1f2430; }
+  .col-narrow { width: 70px; max-width: 70px; }
+  .col-wide { min-width: 260px; }
   .unit-sub { font-size: 10px; color: #a8a498; }
   .num { text-align: right; }
 
@@ -227,7 +229,7 @@
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="acciones">Acciones</button>
+    <button class="tab-btn active" data-tab="acciones">Bitácora</button>
     <button class="tab-btn" data-tab="proyecciones">Proyecciones</button>
     <button class="tab-btn" data-tab="vs">Real vs. Proyección</button>
     <button class="tab-btn" data-tab="kickoff">Unidades en Kickoff</button>
@@ -245,16 +247,31 @@
           <label>Partner(s) / Grupo(s)</label>
           <button type="button" class="ms-btn" id="msBtn" onclick="toggleMs()">Seleccionar partners ▾</button>
           <div class="ms-panel" id="msPanel">
-            <label class="ms-opt"><input type="checkbox" value="Choapan"> Choapan</label>
-            <label class="ms-opt"><input type="checkbox" value="Corasol"> Corasol</label>
-            <label class="ms-opt"><input type="checkbox" value="Zaterra"> Zaterra</label>
-            <label class="ms-opt"><input type="checkbox" value="Aurora"> Aurora</label>
-            <label class="ms-opt"><input type="checkbox" value="B2O_RivieraMaya"> B2O_RivieraMaya</label>
+            <label class="ms-opt"><input type="checkbox" value="Anera"> Anera</label>
+            <label class="ms-opt"><input type="checkbox" value="ArcoLP"> ArcoLP</label>
             <label class="ms-opt"><input type="checkbox" value="Artila"> Artila</label>
-            <label class="ms-opt"><input type="checkbox" value="Nalú"> Nalú</label>
+            <label class="ms-opt"><input type="checkbox" value="Aurora"> Aurora</label>
+            <label class="ms-opt"><input type="checkbox" value="B2O_30_70"> B2O_30_70</label>
+            <label class="ms-opt"><input type="checkbox" value="B2O_70_30"> B2O_70_30</label>
+            <label class="ms-opt"><input type="checkbox" value="B2O_RivieraMaya"> B2O_RivieraMaya</label>
+            <label class="ms-opt"><input type="checkbox" value="B2O_Rojas"> B2O_Rojas</label>
+            <label class="ms-opt"><input type="checkbox" value="BB_PuntoNima"> BB_PuntoNima</label>
+            <label class="ms-opt"><input type="checkbox" value="BellaMar"> BellaMar</label>
+            <label class="ms-opt"><input type="checkbox" value="Chihuahua"> Chihuahua</label>
+            <label class="ms-opt"><input type="checkbox" value="Choapan"> Choapan</label>
+            <label class="ms-opt"><input type="checkbox" value="Colon"> Colon</label>
+            <label class="ms-opt"><input type="checkbox" value="Corasol"> Corasol</label>
+            <label class="ms-opt"><input type="checkbox" value="Mojarra"> Mojarra</label>
+            <label class="ms-opt"><input type="checkbox" value="Nalu"> Nalu</label>
+            <label class="ms-opt"><input type="checkbox" value="OK_Otros"> OK_Otros</label>
             <label class="ms-opt"><input type="checkbox" value="OK_PortoBlu"> OK_PortoBlu</label>
-            <label class="ms-opt"><input type="checkbox" value="Bellamar"> Bellamar</label>
-            <label class="ms-opt"><input type="checkbox" value="Manglar"> Manglar</label>
+            <label class="ms-opt"><input type="checkbox" value="RosaMorada"> RosaMorada</label>
+            <label class="ms-opt"><input type="checkbox" value="Serena"> Serena</label>
+            <label class="ms-opt"><input type="checkbox" value="SolMar_Musa"> SolMar_Musa</label>
+            <label class="ms-opt"><input type="checkbox" value="TorreKu"> TorreKu</label>
+            <label class="ms-opt"><input type="checkbox" value="Tree60"> Tree60</label>
+            <label class="ms-opt"><input type="checkbox" value="VillaRentals"> VillaRentals</label>
+            <label class="ms-opt"><input type="checkbox" value="Zaterra"> Zaterra</label>
             <button type="button" class="ms-close" onclick="closeMs()">Listo</button>
           </div>
         </div>
@@ -268,7 +285,7 @@
 
     <div class="card">
       <div class="toggle-row">
-        <div class="section-title" style="margin-bottom:0;"><div class="left">📋 Log de acciones <span class="count" id="logCount">cargando…</span></div></div>
+        <div class="section-title" style="margin-bottom:0;"><div class="left">📋 Bitácora <span class="count" id="logCount">cargando…</span></div></div>
         <div class="view-toggle">
           <button class="subtab-btn active" onclick="setPeriodo('semana', this)">Semanal</button>
           <button class="subtab-btn" onclick="setPeriodo('mes', this)">Mensual</button>
@@ -302,7 +319,7 @@
           </tr>
         </thead>
         <tbody id="logBody">
-          <tr><td colspan="7" style="text-align:center; color:#a8a498;">Cargando acciones…</td></tr>
+          <tr><td colspan="7" style="text-align:center; color:#a8a498;">Cargando bitácora…</td></tr>
         </tbody>
       </table>
       </div>
@@ -497,7 +514,7 @@
     <div class="card ai-panel" id="aiPanel">
       <div class="section-title"><div class="left">✨ Ideas sugeridas para <span id="aiGrupoNombre">—</span></div></div>
       <div id="aiCardsWrap"></div>
-      <p class="footnote">Ajusta la nota antes de agregar si quieres darle más contexto al equipo. Entra al log de Acciones sin marcar como hecha, para que se revise y decida.</p>
+      <p class="footnote">Ajusta la nota antes de agregar si quieres darle más contexto al equipo. Entra a la Bitácora sin marcar como hecha, para que se revise y decida.</p>
     </div>
 
     <div class="card ai-panel" id="regenPanel">
@@ -545,7 +562,7 @@
         </tbody>
       </table>
       </div>
-      <p class="footnote">"+ Acción" abre el mismo log que la pestaña Acciones, prellenado con la unidad y el grupo. "🎓 Graduar" archiva la unidad (deja de contar como activa, sin borrar su historial). Datos reales — guardados en Supabase.</p>
+      <p class="footnote">"+ Acción" abre el mismo log que la pestaña Bitácora, prellenado con la unidad y el grupo. "🎓 Graduar" archiva la unidad (deja de contar como activa, sin borrar su historial). Datos reales — guardados en Supabase.</p>
     </div>
 
     <div class="card">
@@ -585,7 +602,7 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtZHdwY3JqYXBuZndydWZocHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTA4MTYsImV4cCI6MjEwMDc2NjgxNn0.JEXaPb3hVG8_kUV-Hlr8EFP73evPbToDQv0sun_yblI';
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const PARTNERS_CONOCIDOS = ['Choapan','Corasol','Zaterra','Aurora','B2O_RivieraMaya','Artila','Nalú','OK_PortoBlu','Bellamar','Manglar'];
+  const PARTNERS_CONOCIDOS = ['Anera','ArcoLP','Artila','Aurora','B2O_30_70','B2O_70_30','B2O_RivieraMaya','B2O_Rojas','BB_PuntoNima','BellaMar','Chihuahua','Choapan','Colon','Corasol','Mojarra','Nalu','OK_Otros','OK_PortoBlu','RosaMorada','Serena','SolMar_Musa','TorreKu','Tree60','VillaRentals','Zaterra'];
   let allAcciones = [];
 
   function inicioDeSemana(){
@@ -618,7 +635,7 @@
   function renderAcciones(){
     const tbody = document.getElementById('logBody');
     if(allAcciones.length === 0){
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#a8a498;">Aún no hay acciones registradas — agrega la primera arriba.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#a8a498;">Aún no hay registros en la bitácora — agrega el primero arriba.</td></tr>';
     } else {
       const inicioSemana = inicioDeSemana();
       tbody.innerHTML = allAcciones.map(row => {
@@ -796,7 +813,7 @@
             <label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin:8px 0 4px;">Notas (editable antes de agregar)</label>
             <input type="text" id="${notasId}" value="${s.notas}" style="width:100%; font-size:11.5px; padding:7px 9px; border:1px solid #ddd8cc; border-radius:6px; font-family:inherit;">
           </div>
-          <button class="btn-dark btn-sm" style="white-space:nowrap;" onclick="agregarSugerencia('${s.accion.replace(/'/g,"\\'")}', '${grupo}', '${notasId}')">+ Agregar a Acciones</button>
+          <button class="btn-dark btn-sm" style="white-space:nowrap;" onclick="agregarSugerencia('${s.accion.replace(/'/g,"\\'")}', '${grupo}', '${notasId}')">+ Agregar a Bitácora</button>
         </div>`;
       wrap.appendChild(card);
     });
@@ -808,7 +825,7 @@
     const ok = await crearAccionReal(accion, partner, notas, false);
     if(ok){
       await cargarAcciones();
-      alert('Agregada al log de Acciones para ' + partner + ' (sin marcar como hecha).');
+      alert('Agregada a la Bitácora para ' + partner + ' (sin marcar como hecha).');
     }
   }
 
@@ -880,9 +897,9 @@
 
     const anioBase = ventana[0].anio;
     const headRow = document.getElementById('proyOverviewHead');
-    headRow.innerHTML = '<th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th>' +
+    headRow.innerHTML = '<th>Especialista</th><th>Grupo</th><th class="num col-narrow">Unidades activas</th>' +
       ventana.map(v => `<th class="num">${MESES_NOMBRE[v.mes-1].slice(0,3)}${v.anio !== anioBase ? " '" + String(v.anio).slice(2) : ''}</th>`).join('') +
-      '<th class="num">Total 6m</th><th class="num">Total 2026</th><th>Notas</th>';
+      '<th class="num">Total 6m</th><th class="num">Total 2026</th><th class="col-wide">Notas</th>';
 
     const tbody = document.getElementById('proyOverviewBody');
     document.getElementById('proyGruposCount').textContent = activos.length + ' grupos';
@@ -895,11 +912,11 @@
         return `<tr>
         <td>${g.especialista || '—'}</td>
         <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a></td>
-        <td class="num">${g.unidades_activas ?? '—'}</td>
+        <td class="num col-narrow">${g.unidades_activas ?? '—'}</td>
         ${valores.map(v => `<td class="num">${v === null ? '—' : fmtMoney(v)}</td>`).join('')}
         <td class="num">${fmtMoney(total6m)}</td>
         <td class="num">${fmtMoney(g.total_2026)}</td>
-        <td>${g.notas || '—'}</td>
+        <td class="col-wide">${g.notas || '—'}</td>
       </tr>`;
       }).join('');
     }
