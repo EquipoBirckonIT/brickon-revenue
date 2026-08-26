@@ -276,7 +276,7 @@
           </div>
         </div>
 
-        <div><label>Notas / resultado</label><input type="text" id="accNotas" placeholder="Opcional — contexto o resultado esperado"></div>
+        <div><label>Objetivo</label><input type="text" id="accNotas" placeholder="Opcional — contexto o resultado esperado"></div>
         <div class="check-wrap"><input type="checkbox" id="accHecha" class="chk"><span>Ya está hecha</span></div>
         <button class="btn-dark" onclick="agregarAccion()">+ Agregar</button>
       </div>
@@ -295,7 +295,7 @@
       <div class="scroll-x">
       <table id="logTable">
         <thead>
-          <tr><th>Creada</th><th>Acción</th><th>Partner</th><th>Notas</th><th>Hecha</th><th>Fecha marcada</th><th></th></tr>
+          <tr><th>Creada</th><th>Acción</th><th>Partner</th><th>Objetivo</th><th>Resultado</th><th>Hecha</th><th>Fecha marcada</th><th></th></tr>
         </thead>
         <thead>
           <tr class="filter-row">
@@ -304,22 +304,28 @@
             <td>
               <select onchange="filterLog()" data-col="2">
                 <option value="">Todos</option>
-                <option>Choapan</option><option>Corasol</option><option>Zaterra</option><option>Aurora</option>
-                <option>B2O_RivieraMaya</option><option>Artila</option><option>Nalú</option><option>OK_PortoBlu</option><option>Bellamar</option><option>Manglar</option>
+                <option>Anera</option><option>ArcoLP</option><option>Artila</option><option>Aurora</option>
+                <option>B2O_30_70</option><option>B2O_70_30</option><option>B2O_RivieraMaya</option><option>B2O_Rojas</option>
+                <option>BB_PuntoNima</option><option>BellaMar</option><option>Chihuahua</option><option>Choapan</option>
+                <option>Colon</option><option>Corasol</option><option>Mojarra</option><option>Nalu</option>
+                <option>OK_Otros</option><option>OK_PortoBlu</option><option>RosaMorada</option><option>Serena</option>
+                <option>SolMar_Musa</option><option>TorreKu</option><option>Tree60</option><option>VillaRentals</option>
+                <option>Zaterra</option><option>Todos</option>
               </select>
             </td>
             <td><input type="text" placeholder="filtrar..." oninput="filterLog()" data-col="3"></td>
+            <td><input type="text" placeholder="filtrar..." oninput="filterLog()" data-col="4"></td>
             <td>
-              <select onchange="filterLog()" data-col="4">
+              <select onchange="filterLog()" data-col="5">
                 <option value="">Todas</option><option value="si">Sí</option><option value="no">No</option>
               </select>
             </td>
-            <td><input type="text" placeholder="filtrar..." oninput="filterLog()" data-col="5"></td>
+            <td><input type="text" placeholder="filtrar..." oninput="filterLog()" data-col="6"></td>
             <td></td>
           </tr>
         </thead>
         <tbody id="logBody">
-          <tr><td colspan="7" style="text-align:center; color:#a8a498;">Cargando bitácora…</td></tr>
+          <tr><td colspan="8" style="text-align:center; color:#a8a498;">Cargando bitácora…</td></tr>
         </tbody>
       </table>
       </div>
@@ -627,7 +633,7 @@
 
   async function cargarAcciones(){
     const { data, error } = await sb.from('revenue_actions').select('*').order('created_at', {ascending:false});
-    if(error){ console.error(error); document.getElementById('logBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#b3312c;">No se pudo cargar el log — revisa la consola.</td></tr>'; return; }
+    if(error){ console.error(error); document.getElementById('logBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:#b3312c;">No se pudo cargar el log — revisa la consola.</td></tr>'; return; }
     allAcciones = data || [];
     renderAcciones();
   }
@@ -635,7 +641,7 @@
   function renderAcciones(){
     const tbody = document.getElementById('logBody');
     if(allAcciones.length === 0){
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#a8a498;">Aún no hay registros en la bitácora — agrega el primero arriba.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#a8a498;">Aún no hay registros en la bitácora — agrega el primero arriba.</td></tr>';
     } else {
       const inicioSemana = inicioDeSemana();
       tbody.innerHTML = allAcciones.map(row => {
@@ -647,6 +653,7 @@
           <td>${row.accion}</td>
           <td>${row.partner}</td>
           <td>${row.notas || '—'}</td>
+          <td>${celdaResultadoAccion(row)}</td>
           <td><input type="checkbox" class="chk" ${hecha ? 'checked disabled' : `onchange="marcarHecha('${row.id}')"`}></td>
           <td>${row.fecha_marcada ? fmtFechaHora(row.fecha_marcada) : '—'}</td>
           <td>${hecha ? '' : `<button class="btn-icon" title="Eliminar (idea sin decidir)" onclick="eliminarAccion('${row.id}')">🗑</button>`}</td>
@@ -655,6 +662,36 @@
     }
     filterLog();
     actualizarCumplimiento();
+  }
+
+  function celdaResultadoAccion(row){
+    const texto = row.resultado ? row.resultado.replace(/</g,'&lt;') : '<span style="color:#a8a498;">—</span>';
+    const fecha = row.resultado_at ? fmtFechaCorta(row.resultado_at.slice(0,10)) : null;
+    return `<div class="nota-cell" id="resCell-${row.id}">
+      <div class="nota-texto">${texto}</div>
+      ${fecha ? `<div class="nota-fecha">act. ${fecha}</div>` : ''}
+      <button class="nota-edit-btn" title="Editar resultado" onclick="editarResultadoAccion('${row.id}')">✏️</button>
+    </div>`;
+  }
+
+  function editarResultadoAccion(id){
+    const row = allAcciones.find(x => x.id === id);
+    const cell = document.getElementById('resCell-' + id);
+    if(!row || !cell) return;
+    cell.innerHTML = `<div class="nota-edit">
+      <textarea id="resInput-${id}">${row.resultado || ''}</textarea>
+      <button class="nota-save-btn" title="Guardar" onclick="guardarResultadoAccion('${id}')">💾 Guardar</button>
+    </div>`;
+    document.getElementById('resInput-' + id).focus();
+  }
+
+  async function guardarResultadoAccion(id){
+    const input = document.getElementById('resInput-' + id);
+    if(!input) return;
+    const valor = input.value.trim();
+    const { error } = await sb.from('revenue_actions').update({ resultado: valor || null, resultado_at: new Date().toISOString() }).eq('id', id);
+    if(error){ alert('No se pudo guardar el resultado: ' + error.message); return; }
+    await cargarAcciones();
   }
 
   function actualizarCumplimiento(){
@@ -763,7 +800,7 @@
       Object.keys(filters).forEach(col=>{
         const val = filters[col];
         if(!val) return;
-        if(col==='4'){
+        if(col==='5'){
           if(val==='si' && tr.dataset.hecha!=='si') visible=false;
           if(val==='no' && tr.dataset.hecha!=='no') visible=false;
         } else {
