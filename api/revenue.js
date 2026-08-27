@@ -72,7 +72,7 @@ function stringValue(value, maxLength = 1000) {
 
 function selectValue(config, value) {
   if (value === "*") return value;
-  const fields = stringValue(value, 1000).split(",");
+  const fields = stringValue(value, 1000).split(",").map((field) => field.trim()).filter(Boolean);
   if (!fields.every((field) => config.columns.includes(field))) throw new Error("Columnas no permitidas.");
   return fields.join(",");
 }
