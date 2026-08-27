@@ -376,6 +376,7 @@
 
       <div class="card">
         <div class="section-title"><div class="left">Objetivo por grupo — trimestre actual + siguiente (6 meses, se recalcula solo) <span class="count" id="proyGruposCount">0 grupos</span></div></div>
+        <div style="margin:-6px 0 10px;"><button class="btn-ghost btn-sm" onclick="descargarCSVProyOverview()">⬇️ Descargar CSV</button></div>
         <div class="scroll-x">
         <table>
           <thead><tr id="proyOverviewHead"><th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
@@ -899,12 +900,14 @@
     cargarAjustesGlobal();
   }
 
+  function revenueDeProy(grupo, anio, mes){
+    const row = allProyMensualVentana.find(m => m.grupo === grupo && m.anio === anio && m.mes === mes);
+    return row && row.revenue_mensual != null ? Number(row.revenue_mensual) : null;
+  }
+
   function renderProyOverview(){
     const ventana = ventanaMeses();
-    const revenueDe = (grupo, anio, mes) => {
-      const row = allProyMensualVentana.find(m => m.grupo === grupo && m.anio === anio && m.mes === mes);
-      return row && row.revenue_mensual != null ? Number(row.revenue_mensual) : null;
-    };
+    const revenueDe = revenueDeProy;
     const activos = allProyGrupos.filter(g => g.estado !== 'terminado');
     const terminados = allProyGrupos.filter(g => g.estado === 'terminado');
 
@@ -968,6 +971,38 @@
         <td class="num">${fmtMoney(g.total_2026)}</td>
         <td>${g.notas || '—'}</td>
       </tr>`).join('');
+  }
+
+  function csvCell(val){
+    const s = (val === null || val === undefined) ? '' : String(val);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function descargarCSVProyOverview(){
+    const ventana = ventanaMeses();
+    const anioBase = ventana[0].anio;
+    const activos = allProyGrupos.filter(g => g.estado !== 'terminado');
+    const headers = ['Especialista', 'Grupo', 'Unidades activas',
+      ...ventana.map(v => MESES_NOMBRE[v.mes-1].slice(0,3) + (v.anio !== anioBase ? " '" + String(v.anio).slice(2) : '')),
+      'Total 6m', 'Total 2026', 'Notas'];
+    const filas = activos.map(g => {
+      const valores = ventana.map(v => revenueDeProy(g.grupo, v.anio, v.mes));
+      const total6m = valores.reduce((a,v) => a + (v || 0), 0);
+      return [g.especialista || '', g.grupo, g.unidades_activas ?? '',
+        ...valores.map(v => v === null ? '' : Math.round(v)),
+        Math.round(total6m), g.total_2026 != null ? Math.round(g.total_2026) : '', g.notas || ''];
+    });
+    const csv = [headers, ...filas].map(row => row.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const hoy = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `proyecciones_portafolio_${hoy}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   async function cargarConsejo(){
