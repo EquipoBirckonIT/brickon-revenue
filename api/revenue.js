@@ -195,7 +195,6 @@ module.exports = async (req, res) => {
   try {
     return res.status(200).json({ data: await execute(body(req)) });
   } catch (error) {
-    console.error("Revenue API request failed:", error.message || error);
     return res.status(400).json({ error: error.message || "No se pudo completar la operacion." });
   }
 };
