@@ -18,11 +18,6 @@
   h1 { font-size: 21px; font-weight: 700; color: #1f2430; }
   .subtitle { font-size: 12.5px; color: #8a8677; margin-top: 2px; }
   .mock-flag { background: #f5ddc4; border: 1px solid #e8bd8f; color: #8a4d16; font-size: 10px; font-weight: 700; padding: 4px 11px; border-radius: 20px; letter-spacing: 0.3px; white-space: nowrap; }
-  .header-meta { display:flex; align-items:flex-end; flex-direction:column; gap:7px; }
-  .session-control { display:flex; align-items:center; justify-content:flex-end; gap:7px; color:#8a8677; font-size:11px; }
-  .session-user { max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .logout-btn { appearance:none; background:#fff; border:1px solid #e4e1da; color:#1f2430; border-radius:7px; padding:4px 8px; font-size:11px; cursor:pointer; }
-  .logout-btn:hover { border-color:#1f2430; }
 
   .btn-dark { background: #1f2430; color: #fff; font-size: 12px; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer; }
   .btn-dark:hover { background: #333f4c; }
@@ -173,9 +168,7 @@
 
   .progress-dots { display: flex; gap: 2px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .dot-ok { background: #2e7d4f; }
-  .dot-warn { background: #d8ae4f; }
-  .dot-critico { background: #b3312c; }
+  .dot-done { background: #8a8470; }
   .dot-pending { background: #e4e1da; }
   .dot-future { background: transparent; border: 1px dashed #ddd8cc; }
   .dot-obd { background: #cfcabb; border: 1px solid #b8b19c; }
@@ -196,6 +189,9 @@
   .semaforo-btn.b-ok { background: #2e7d4f; }
   .semaforo-btn.b-atencion { background: #d8ae4f; }
   .semaforo-btn.b-critico { background: #b3312c; }
+  .semaforo-btn:disabled { cursor: not-allowed; }
+  .semaforo-btn:disabled:hover { transform: none; }
+  .semaforo-btn:disabled:not(.sel) { opacity: .22; }
   .semaforo-label { font-size: 9.5px; color: #a8a498; }
 
   .footnote { font-size: 10.5px; color: #b4b0a4; margin-top: 8px; }
@@ -227,13 +223,7 @@
         <div class="subtitle">Portafolio completo · vive dentro del portal interno de Brickon, junto a Salud Semanal, Tickets IT y BrickonIA</div>
       </div>
     </div>
-    <div class="header-meta">
-      <div class="mock-flag" style="background:#dcf0e0;border-color:#b7ddc0;color:#2e7d4f;">Todas las pestañas en vivo — datos reales de Supabase</div>
-      <div class="session-control">
-        <span class="session-user" id="sessionUser">Sesión corporativa</span>
-        <button class="logout-btn" type="button" onclick="bkLogout()">Cerrar sesión</button>
-      </div>
-    </div>
+    <div class="mock-flag" style="background:#dcf0e0;border-color:#b7ddc0;color:#2e7d4f;">Todas las pestañas en vivo — datos reales de Supabase</div>
   </div>
 
   <div class="filters">
@@ -605,48 +595,12 @@
 
 </div>
 
-<script src="/auth-client.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ---------- API interna protegida (Revenue / Supabase) ----------
-  function createRevenueClient(){
-    function from(table){
-      const state = { table, operation: 'select', select: '*', filters: [] };
-      const builder = {
-        select(fields){ state.operation = 'select'; state.select = fields; return builder; },
-        order(column, options){ state.order = { column, ascending: !options || options.ascending !== false }; return builder; },
-        eq(column, value){ state.filters.push({ column, operator: 'eq', value }); return builder; },
-        in(column, value){ state.filters.push({ column, operator: 'in', value }); return builder; },
-        limit(value){ state.limit = value; return builder; },
-        insert(payload){ state.operation = 'insert'; state.payload = payload; return builder; },
-        update(payload){ state.operation = 'update'; state.payload = payload; return builder; },
-        delete(){ state.operation = 'delete'; state.payload = {}; return builder; },
-        upsert(payload, options){ state.operation = 'upsert'; state.payload = payload; state.onConflict = options && options.onConflict; return builder; },
-        then(resolve, reject){ return execute().then(resolve, reject); }
-      };
-      async function execute(){
-        try {
-          const response = await fetch('/api/revenue', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify(state)
-          });
-          const result = await response.json();
-          return response.ok ? { data: result.data, error: null } : { data: null, error: { message: result.error || 'No se pudo completar la operación.' } };
-        } catch(error) {
-          return { data: null, error: { message: error.message || 'No se pudo conectar con Revenue.' } };
-        }
-      }
-      return builder;
-    }
-    return { from };
-  }
-
-  const sb = createRevenueClient();
-  window.bkLogout = function(){ location.assign('/api/auth?action=logout'); };
-  window.brickonSession.then(function(user){
-    document.getElementById('sessionUser').textContent = (user.nombre || user.correo || 'Sesión corporativa') + (user.rol ? ' · ' + user.rol : '');
-  }).catch(function(){});
+  // ---------- Supabase (proyecto brickon-guesty-hub, tabla revenue_actions) ----------
+  const SUPABASE_URL = 'https://bmdwpcrjapnfwrufhpxv.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtZHdwY3JqYXBuZndydWZocHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTA4MTYsImV4cCI6MjEwMDc2NjgxNn0.JEXaPb3hVG8_kUV-Hlr8EFP73evPbToDQv0sun_yblI';
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const PARTNERS_CONOCIDOS = ['Anera','ArcoLP','Artila','Aurora','B2O_30_70','B2O_70_30','B2O_RivieraMaya','B2O_Rojas','BB_PuntoNima','BellaMar','Chihuahua','Choapan','Colon','Corasol','Mojarra','Nalu','OK_Otros','OK_PortoBlu','RosaMorada','Serena','SolMar_Musa','TorreKu','Tree60','VillaRentals','Zaterra'];
   let allAcciones = [];
@@ -758,9 +712,7 @@
     return true;
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    window.brickonSession.then(() => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); cargarRealVsProy(); }).catch(() => {});
-  });
+  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); cargarRealVsProy(); });
 
   // ---------- tabs principales ----------
   document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
@@ -1415,21 +1367,40 @@
     return '<span class="badge b-progreso">Sin check-in</span>';
   }
 
+  function esJuevesHoy(){
+    return new Date().getDay() === 4; // Dom=0 ... Jue=4
+  }
+
+  function semanaCierreReciente(){
+    // Semana cuyo cierre (miércoles) ya pasó o es hoy. Caso especial: si hoy es jueves,
+    // semanaDelAnio(hoy) apuntaría a la semana que recién arrancó (cierra el próximo
+    // miércoles), así que usamos ayer (el miércoles que acaba de cerrar).
+    const hoy = new Date();
+    const ref = esJuevesHoy() ? new Date(hoy.getTime() - 24*3600*1000) : hoy;
+    return semanaDelAnio(ref);
+  }
+
   function celdaSemaforoKickoff(u, checkinsUnidad){
-    // Semáforo manual: siempre actúa sobre la semana actual (la que se está revisando hoy),
-    // no sobre la última fila que exista — así se construye un rastro semana a semana.
-    const semanaActual = semanaDelAnio(new Date());
+    // Semáforo manual: el jueves es el día libre para marcar el color oficial de la
+    // semana que acaba de cerrar (jueves anterior a miércoles). Fuera de jueves queda
+    // visible pero bloqueado — no se puede tocar hasta el jueves siguiente.
+    const semanaActual = semanaCierreReciente();
     const cActual = checkinsUnidad.find(x => x.semana_num === semanaActual);
     const estadoActual = cActual ? cActual.estado : null;
-    const btn = (val, title) => `<button class="semaforo-btn b-${val} ${estadoActual===val?'sel':''}" title="${title} — semana ${semanaActual}" onclick="setSemaforoKickoff('${u.id}', '${val}')"></button>`;
+    const bloqueado = !esJuevesHoy();
+    const btn = (val, title) => `<button class="semaforo-btn b-${val} ${estadoActual===val?'sel':''}" ${bloqueado ? 'disabled' : ''} title="${title} — semana ${semanaActual}${bloqueado ? ' (se edita los jueves)' : ''}" onclick="setSemaforoKickoff('${u.id}', '${val}')"></button>`;
+    const label = bloqueado
+      ? (estadoActual ? 'S' + semanaActual + ' — color oficial (edita el jueves)' : 'S' + semanaActual + ' sin marcar (edita el jueves)')
+      : (estadoActual ? 'S' + semanaActual + ' marcada' : 'S' + semanaActual + ' — jueves libre para marcar');
     return `<div class="semaforo-cell">
       <div class="semaforo-dots">${btn('ok','OK')}${btn('atencion','Atención')}${btn('critico','Crítico')}</div>
-      <div class="semaforo-label">${estadoActual ? 'S' + semanaActual + ' marcada' : 'S' + semanaActual + ' sin marcar'}</div>
+      <div class="semaforo-label">${label}</div>
     </div>`;
   }
 
   async function setSemaforoKickoff(unitId, estado){
-    const semanaActual = semanaDelAnio(new Date());
+    if(!esJuevesHoy()){ alert('El semáforo solo se puede editar los jueves.'); return; }
+    const semanaActual = semanaCierreReciente();
     const { error } = await sb.from('kickoff_checkins')
       .upsert({ unit_id: unitId, semana_num: semanaActual, estado }, { onConflict: 'unit_id,semana_num' });
     if(error){ alert('No se pudo guardar el semáforo: ' + error.message); return; }
@@ -1481,8 +1452,7 @@
         // Semana OBD (la de fecha_kickoff): no cuenta como progreso — pueden llevar solo un par de días.
         const labelObd = semanaDelAnio(inicioKickoff);
         const cObd = checkinsUnidad.find(x => x.semana_num === labelObd);
-        let clsObd = 'dot-obd';
-        if(cObd){ clsObd = cObd.estado === 'ok' ? 'dot-ok' : (cObd.estado === 'atencion' ? 'dot-warn' : 'dot-critico'); }
+        let clsObd = cObd ? 'dot-done' : 'dot-obd';
         dots.push(`<span class="dot ${clsObd}" title="Semana ${labelObd} — OBD, no cuenta como progreso"></span>`);
         // Las 12 semanas de progreso real arrancan la semana siguiente al OBD.
         const semanasTranscurridas = idxHoy - idxInicio;
@@ -1492,7 +1462,7 @@
           const labelDot = semanaDelAnio(fechaDot);
           const c = checkinsUnidad.find(x => x.semana_num === labelDot);
           let cls = 'dot-future';
-          if(c){ cls = c.estado === 'ok' ? 'dot-ok' : (c.estado === 'atencion' ? 'dot-warn' : 'dot-critico'); }
+          if(c){ cls = 'dot-done'; }
           else if(i <= semanasTranscurridas){ cls = 'dot-pending'; }
           dots.push(`<span class="dot ${cls}" title="Semana ${labelDot}"></span>`);
         }
