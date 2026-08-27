@@ -18,6 +18,11 @@
   h1 { font-size: 21px; font-weight: 700; color: #1f2430; }
   .subtitle { font-size: 12.5px; color: #8a8677; margin-top: 2px; }
   .mock-flag { background: #f5ddc4; border: 1px solid #e8bd8f; color: #8a4d16; font-size: 10px; font-weight: 700; padding: 4px 11px; border-radius: 20px; letter-spacing: 0.3px; white-space: nowrap; }
+  .header-meta { display:flex; align-items:flex-end; flex-direction:column; gap:7px; }
+  .session-control { display:flex; align-items:center; justify-content:flex-end; gap:7px; color:#8a8677; font-size:11px; }
+  .session-user { max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .logout-btn { appearance:none; background:#fff; border:1px solid #e4e1da; color:#1f2430; border-radius:7px; padding:4px 8px; font-size:11px; cursor:pointer; }
+  .logout-btn:hover { border-color:#1f2430; }
 
   .btn-dark { background: #1f2430; color: #fff; font-size: 12px; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer; }
   .btn-dark:hover { background: #333f4c; }
@@ -222,7 +227,13 @@
         <div class="subtitle">Portafolio completo · vive dentro del portal interno de Brickon, junto a Salud Semanal, Tickets IT y BrickonIA</div>
       </div>
     </div>
-    <div class="mock-flag" style="background:#dcf0e0;border-color:#b7ddc0;color:#2e7d4f;">Todas las pestañas en vivo — datos reales de Supabase</div>
+    <div class="header-meta">
+      <div class="mock-flag" style="background:#dcf0e0;border-color:#b7ddc0;color:#2e7d4f;">Todas las pestañas en vivo — datos reales de Supabase</div>
+      <div class="session-control">
+        <span class="session-user" id="sessionUser">Sesión corporativa</span>
+        <button class="logout-btn" type="button" onclick="bkLogout()">Cerrar sesión</button>
+      </div>
+    </div>
   </div>
 
   <div class="filters">
@@ -594,12 +605,48 @@
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/auth-client.js"></script>
 <script>
-  // ---------- Supabase (proyecto brickon-guesty-hub, tabla revenue_actions) ----------
-  const SUPABASE_URL = 'https://bmdwpcrjapnfwrufhpxv.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtZHdwY3JqYXBuZndydWZocHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTA4MTYsImV4cCI6MjEwMDc2NjgxNn0.JEXaPb3hVG8_kUV-Hlr8EFP73evPbToDQv0sun_yblI';
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // ---------- API interna protegida (Revenue / Supabase) ----------
+  function createRevenueClient(){
+    function from(table){
+      const state = { table, operation: 'select', select: '*', filters: [] };
+      const builder = {
+        select(fields){ state.operation = 'select'; state.select = fields; return builder; },
+        order(column, options){ state.order = { column, ascending: !options || options.ascending !== false }; return builder; },
+        eq(column, value){ state.filters.push({ column, operator: 'eq', value }); return builder; },
+        in(column, value){ state.filters.push({ column, operator: 'in', value }); return builder; },
+        limit(value){ state.limit = value; return builder; },
+        insert(payload){ state.operation = 'insert'; state.payload = payload; return builder; },
+        update(payload){ state.operation = 'update'; state.payload = payload; return builder; },
+        delete(){ state.operation = 'delete'; state.payload = {}; return builder; },
+        upsert(payload, options){ state.operation = 'upsert'; state.payload = payload; state.onConflict = options && options.onConflict; return builder; },
+        then(resolve, reject){ return execute().then(resolve, reject); }
+      };
+      async function execute(){
+        try {
+          const response = await fetch('/api/revenue', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(state)
+          });
+          const result = await response.json();
+          return response.ok ? { data: result.data, error: null } : { data: null, error: { message: result.error || 'No se pudo completar la operación.' } };
+        } catch(error) {
+          return { data: null, error: { message: error.message || 'No se pudo conectar con Revenue.' } };
+        }
+      }
+      return builder;
+    }
+    return { from };
+  }
+
+  const sb = createRevenueClient();
+  window.bkLogout = function(){ location.assign('/api/auth?action=logout'); };
+  window.brickonSession.then(function(user){
+    document.getElementById('sessionUser').textContent = (user.nombre || user.correo || 'Sesión corporativa') + (user.rol ? ' · ' + user.rol : '');
+  }).catch(function(){});
 
   const PARTNERS_CONOCIDOS = ['Anera','ArcoLP','Artila','Aurora','B2O_30_70','B2O_70_30','B2O_RivieraMaya','B2O_Rojas','BB_PuntoNima','BellaMar','Chihuahua','Choapan','Colon','Corasol','Mojarra','Nalu','OK_Otros','OK_PortoBlu','RosaMorada','Serena','SolMar_Musa','TorreKu','Tree60','VillaRentals','Zaterra'];
   let allAcciones = [];
@@ -711,7 +758,9 @@
     return true;
   }
 
-  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); cargarRealVsProy(); });
+  window.addEventListener('DOMContentLoaded', () => {
+    window.brickonSession.then(() => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); cargarRealVsProy(); }).catch(() => {});
+  });
 
   // ---------- tabs principales ----------
   document.querySelectorAll('.tabs .tab-btn').forEach(btn => {

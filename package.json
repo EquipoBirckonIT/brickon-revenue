@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^3.8.1"
+  }
+}
