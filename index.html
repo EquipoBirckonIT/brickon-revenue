@@ -395,9 +395,9 @@
         <div style="margin:-6px 0 10px;"><button class="btn-ghost btn-sm" onclick="descargarCSVProyOverview()">⬇️ Descargar CSV</button></div>
         <div class="scroll-x">
         <table>
-          <thead><tr id="proyOverviewHead"><th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
+          <thead><tr id="proyOverviewHead"><th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
           <tbody id="proyOverviewBody">
-            <tr><td colspan="12" style="text-align:center;color:#a8a498;">Cargando grupos…</td></tr>
+            <tr><td colspan="13" style="text-align:center;color:#a8a498;">Cargando grupos…</td></tr>
           </tbody>
         </table>
         </div>
@@ -413,7 +413,7 @@
         <div class="hist-panel" id="proyTerminadosPanel">
           <div class="scroll-x">
           <table>
-            <thead><tr><th>Especialista</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026 (histórico)</th><th>Notas</th></tr></thead>
+            <thead><tr><th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026 (histórico)</th><th>Notas</th></tr></thead>
             <tbody id="proyTerminadosBody"></tbody>
           </table>
           </div>
@@ -964,7 +964,7 @@
       sb.from('proy_grupos').select('*').order('grupo', {ascending:true}),
       sb.from('proy_mensual').select('grupo,anio,mes,revenue_mensual,revenue_baja,revenue_alta').in('anio', anios)
     ]);
-    if(error || em){ console.error(error || em); document.getElementById('proyOverviewBody').innerHTML = '<tr><td colspan="12" style="text-align:center;color:#b3312c;">No se pudieron cargar los grupos — revisa la consola.</td></tr>'; return; }
+    if(error || em){ console.error(error || em); document.getElementById('proyOverviewBody').innerHTML = '<tr><td colspan="13" style="text-align:center;color:#b3312c;">No se pudieron cargar los grupos — revisa la consola.</td></tr>'; return; }
     allProyGrupos = data || [];
     allProyMensualVentana = mensual || [];
     poblarSelectorGrupo();
@@ -1003,6 +1003,19 @@
     return `<span style="display:block; font-size:10px; font-weight:400; color:#a8a498; line-height:1.4; margin-top:1px;">${g.estado_grupo}</span>`;
   }
 
+  // % de comisión Brickon. Si no es exacta (estimada/pendiente de confirmar), se marca con un asterisco.
+  function comisionTexto(g){
+    if(g.comision_brickon_pct === null || g.comision_brickon_pct === undefined) return '—';
+    const pct = Number(g.comision_brickon_pct);
+    const num = Number.isInteger(pct) ? pct : pct.toFixed(1).replace(/\.0$/, '');
+    return num + '%' + (g.comision_exacta === false ? '*' : '');
+  }
+  function comisionCell(g){
+    const exacta = g.comision_exacta;
+    const titulo = exacta === false ? ' title="Comisión estimada, no confirmada"' : '';
+    return `<span${titulo}>${comisionTexto(g)}</span>`;
+  }
+
   function renderProyOverview(){
     const ventana = ventanaMeses();
     const revenueDe = revenueDeProy;
@@ -1013,20 +1026,21 @@
 
     const anioBase = ventana[0].anio;
     const headRow = document.getElementById('proyOverviewHead');
-    headRow.innerHTML = '<th>Especialista</th><th>Grupo</th><th class="num col-narrow">Unidades activas</th>' +
+    headRow.innerHTML = '<th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num col-narrow">Unidades activas</th>' +
       ventana.map(v => `<th class="num">${MESES_NOMBRE[v.mes-1].slice(0,3)}${v.anio !== anioBase ? " '" + String(v.anio).slice(2) : ''}</th>`).join('') +
       '<th class="num">Total 6m</th><th class="num">Total 2026' + bandaSufijo() + '</th><th class="col-wide">Notas</th>';
 
     const tbody = document.getElementById('proyOverviewBody');
     document.getElementById('proyGruposCount').textContent = activos.length + ' grupos';
     if(activos.length === 0){
-      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#a8a498;">Aún no hay grupos cargados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:#a8a498;">Aún no hay grupos cargados.</td></tr>';
     } else {
       tbody.innerHTML = activos.map(g => {
         const valores = ventana.map(v => revenueDe(g.grupo, v.anio, v.mes));
         const total6m = valores.reduce((a,v) => a + (v || 0), 0);
         return `<tr>
         <td>${g.especialista || '—'}</td>
+        <td>${comisionCell(g)}</td>
         <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a>${estadoGrupoCaption(g)}</td>
         <td class="num col-narrow">${g.unidades_activas ?? '—'}</td>
         ${valores.map(v => `<td class="num">${v === null ? '—' : fmtMoney(v)}</td>`).join('')}
@@ -1062,9 +1076,10 @@
     document.getElementById('proyTerminadosCount').textContent = terminados.length + ' grupos';
     const tbodyT = document.getElementById('proyTerminadosBody');
     tbodyT.innerHTML = terminados.length === 0
-      ? '<tr><td colspan="5" style="text-align:center;color:#a8a498;">Sin grupos terminados.</td></tr>'
+      ? '<tr><td colspan="6" style="text-align:center;color:#a8a498;">Sin grupos terminados.</td></tr>'
       : terminados.map(g => `<tr>
         <td>${g.especialista || '—'}</td>
+        <td>${comisionCell(g)}</td>
         <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a>${estadoGrupoCaption(g)}</td>
         <td class="num">${g.unidades_activas ?? '—'}</td>
         <td class="num">${fmtMoney(g.total_2026)}</td>
@@ -1081,13 +1096,13 @@
     const ventana = ventanaMeses();
     const anioBase = ventana[0].anio;
     const activos = allProyGrupos.filter(g => g.estado !== 'terminado');
-    const headers = ['Especialista', 'Grupo', 'Unidades activas',
+    const headers = ['Especialista', 'Comisión', 'Grupo', 'Unidades activas',
       ...ventana.map(v => MESES_NOMBRE[v.mes-1].slice(0,3) + (v.anio !== anioBase ? " '" + String(v.anio).slice(2) : '')),
       'Total 6m', 'Total 2026', 'Notas'];
     const filas = activos.map(g => {
       const valores = ventana.map(v => revenueDeProy(g.grupo, v.anio, v.mes));
       const total6m = valores.reduce((a,v) => a + (v || 0), 0);
-      return [g.especialista || '', g.grupo, g.unidades_activas ?? '',
+      return [g.especialista || '', comisionTexto(g), g.grupo, g.unidades_activas ?? '',
         ...valores.map(v => v === null ? '' : Math.round(v)),
         Math.round(total6m), g.total_2026 != null ? Math.round(g.total_2026) : '', g.notas || ''];
     });
