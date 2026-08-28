@@ -425,7 +425,12 @@
     <!-- SUB 2: DETALLE POR GRUPO -->
     <div class="subview" id="proy-detalle">
       <div class="toggle-row">
-        <div class="filter-pill" style="display:inline-flex;">🏠 Grupo: <b id="grupoSeleccionado" style="margin-left:4px;">—</b> <span class="caret">▾</span></div>
+        <div class="filter-pill" style="display:inline-flex;">🏠 Grupo:
+          <select id="grupoSelector" onchange="if(this.value) irADetalle(this.value);" style="border:none; background:transparent; font:inherit; font-weight:700; color:#1f2430; cursor:pointer; -webkit-appearance:none; appearance:none; padding:0 2px;">
+            <option value="">—</option>
+          </select>
+          <span class="caret">▾</span>
+        </div>
         <div class="banda-toggle-wrap" style="margin-bottom:0;">
           <span class="banda-toggle-label">Banda:</span>
           <div class="banda-toggle">
@@ -441,7 +446,7 @@
       </div>
 
       <div class="card">
-        <div class="section-title"><div class="left">Inventario y proyección — <span id="grupoSeleccionado2">—</span></div></div>
+        <div class="section-title"><div class="left">Inventario y proyección — <span id="grupoSeleccionado2">—</span> <span id="detFechaAjuste" style="font-size:11px; font-weight:400; color:#8a8677;"></span></div></div>
         <div class="inv-grid">
           <div class="inv-box"><div class="lbl">Unidades activas</div><div class="val" id="detUnidades">—</div></div>
           <div class="inv-box"><div class="lbl" id="detAdrLbl">ADR proyectado (mes actual)</div><div class="val" id="detAdr">—</div></div>
@@ -934,6 +939,7 @@
     if(error || em){ console.error(error || em); document.getElementById('proyOverviewBody').innerHTML = '<tr><td colspan="12" style="text-align:center;color:#b3312c;">No se pudieron cargar los grupos — revisa la consola.</td></tr>'; return; }
     allProyGrupos = data || [];
     allProyMensualVentana = mensual || [];
+    poblarSelectorGrupo();
     renderProyOverview();
     cargarConsejo();
     cargarAjustesGlobal();
@@ -1106,18 +1112,33 @@
     };
   }
 
+  function poblarSelectorGrupo(){
+    const sel = document.getElementById('grupoSelector');
+    if(!sel) return;
+    const prevVal = sel.value;
+    const activos = allProyGrupos.filter(g => g.estado !== 'terminado').sort((a,b) => a.grupo.localeCompare(b.grupo));
+    sel.innerHTML = '<option value="">—</option>' + activos.map(g => `<option value="${g.grupo}">${g.grupo}</option>`).join('');
+    if(prevVal) sel.value = prevVal;
+  }
+
+  let expandedAjusteId = null;
+  let ajustesDetalleActual = [];
+  let historicoDetalleActual = [];
+
   async function irADetalle(grupo){
     document.querySelectorAll('.subtabs .subtab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.subview').forEach(v => v.classList.remove('active'));
     document.querySelector('[data-sub="proy-detalle"]').classList.add('active');
     document.getElementById('proy-detalle').classList.add('active');
     currentDetalleGrupo = grupo;
-    document.getElementById('grupoSeleccionado').textContent = grupo;
+    poblarSelectorGrupo();
+    document.getElementById('grupoSelector').value = grupo;
     document.getElementById('grupoSeleccionado2').textContent = grupo;
     document.getElementById('histGrupoNombre').textContent = grupo;
     document.getElementById('ajGrupoNombre').textContent = grupo;
     document.getElementById('historialPanel').classList.remove('open');
     document.getElementById('ajustarPanel').classList.remove('open');
+    expandedAjusteId = null;
     await cargarDetalleGrupo(grupo);
   }
 
@@ -1126,10 +1147,16 @@
     document.getElementById('detUnidades').textContent = g ? (g.unidades_activas ?? '—') : '—';
 
     const anio = new Date().getFullYear();
-    const [{ data: mensual, error: em }, { data: ajustes, error: ea }] = await Promise.all([
+    const [{ data: mensual, error: em }, { data: ajustes, error: ea }, { data: historico, error: eh }] = await Promise.all([
       sb.from('proy_mensual').select('*').eq('grupo', grupo).eq('anio', anio).order('mes', {ascending:true}),
-      sb.from('proy_ajustes').select('*').eq('grupo', grupo).order('created_at', {ascending:false})
+      sb.from('proy_ajustes').select('*').eq('grupo', grupo).order('created_at', {ascending:false}),
+      sb.from('proy_mensual_historico').select('*').eq('grupo', grupo).order('reemplazada_at', {ascending:false})
     ]);
+    ajustesDetalleActual = (!ea && ajustes) ? ajustes : [];
+    historicoDetalleActual = (!eh && historico) ? historico : [];
+    document.getElementById('detFechaAjuste').textContent = ajustesDetalleActual.length
+      ? '· última proyección: ' + new Date(ajustesDetalleActual[0].created_at).toLocaleDateString('es-MX', {day:'numeric', month:'short', year:'numeric'})
+      : '';
 
     const campoAdr = campoBanda('adr'), campoOcc = campoBanda('occ_pct'), campoRev = campoBanda('revenue_mensual');
     document.getElementById('detMensualHead').innerHTML = '<th>Mes</th><th class="num">Noches disp.</th><th class="num">ADR' + bandaSufijo() + '</th><th class="num">Occ.' + bandaSufijo() + '</th><th class="num">Noches res.</th><th class="num">Revenue mensual' + bandaSufijo() + '</th>';
@@ -1167,19 +1194,60 @@
       document.getElementById('detOcc').textContent = mesActualRow[campoOcc] != null ? mesActualRow[campoOcc] + '%' : '—';
     }
 
+    renderHistorialBody();
+  }
+
+  function renderHistorialBody(){
     const histBody = document.getElementById('historialBody');
-    if(ea || !ajustes || ajustes.length === 0){
+    if(ajustesDetalleActual.length === 0){
       histBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a8a498;">Sin ajustes registrados todavía.</td></tr>';
-    } else {
-      histBody.innerHTML = ajustes.map(a => `<tr>
-        <td>${new Date(a.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</td>
+      return;
+    }
+    histBody.innerHTML = ajustesDetalleActual.map(a => {
+      const fila = `<tr class="hist-row-click" style="cursor:pointer;" onclick="toggleHistorialDetalle('${a.id}')">
+        <td>${new Date(a.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})} <span class="caret" style="font-size:9px;color:#b4b0a4;">${expandedAjusteId===a.id?'▴':'▾'}</span></td>
         <td class="num">${a.total_anterior ? fmtMoney(a.total_anterior) : '—'}</td>
         <td class="num">${fmtMoney(a.total_objetivo)}</td>
         <td>${a.meses_afectados || '—'}</td>
         <td>${a.responsable || '—'}</td>
         <td>${a.motivo || '—'}</td>
-      </tr>`).join('');
-    }
+      </tr>`;
+      if(expandedAjusteId !== a.id) return fila;
+      const creado = new Date(a.created_at).getTime();
+      const filas = historicoDetalleActual
+        .filter(h => Math.abs(new Date(h.reemplazada_at).getTime() - creado) < 5 * 60 * 1000)
+        .sort((x,y) => x.mes - y.mes);
+      const detalle = filas.length === 0
+        ? '<div style="color:#a8a498;padding:8px 4px;">No se encontró el breakdown mensual archivado para este ajuste.</div>'
+        : `<table style="width:100%; font-size:11px; margin-top:6px;">
+            <thead><tr style="color:#8a8677;">
+              <th style="text-align:left;padding:4px;">Mes</th><th class="num" style="padding:4px;">Noches disp.</th>
+              <th class="num" style="padding:4px;">ADR baja</th><th class="num" style="padding:4px;">ADR media</th><th class="num" style="padding:4px;">ADR alta</th>
+              <th class="num" style="padding:4px;">Occ. media</th>
+              <th class="num" style="padding:4px;">Rev. baja</th><th class="num" style="padding:4px;">Rev. media</th><th class="num" style="padding:4px;">Rev. alta</th>
+            </tr></thead>
+            <tbody>${filas.map(m => `<tr>
+              <td style="padding:4px;">${MESES_NOMBRE[m.mes-1]}</td>
+              <td class="num" style="padding:4px;">${m.noches_disponibles ?? '—'}</td>
+              <td class="num" style="padding:4px;">${m.adr_baja ? fmtMoney(m.adr_baja) : '—'}</td>
+              <td class="num" style="padding:4px;">${m.adr ? fmtMoney(m.adr) : '—'}</td>
+              <td class="num" style="padding:4px;">${m.adr_alta ? fmtMoney(m.adr_alta) : '—'}</td>
+              <td class="num" style="padding:4px;">${m.occ_pct ?? '—'}%</td>
+              <td class="num" style="padding:4px;">${m.revenue_baja != null ? fmtMoney(m.revenue_baja) : '—'}</td>
+              <td class="num" style="padding:4px;">${fmtMoney(m.revenue_mensual)}</td>
+              <td class="num" style="padding:4px;">${m.revenue_alta != null ? fmtMoney(m.revenue_alta) : '—'}</td>
+            </tr>`).join('')}</tbody>
+          </table>`;
+      return fila + `<tr><td colspan="6" style="background:#faf9f6;padding:8px 12px;">
+        <div style="font-size:10.5px;color:#8a8677;font-weight:600;">Breakdown archivado antes de este ajuste (${filas.length} meses)</div>
+        ${detalle}
+      </td></tr>`;
+    }).join('');
+  }
+
+  function toggleHistorialDetalle(ajusteId){
+    expandedAjusteId = (expandedAjusteId === ajusteId) ? null : ajusteId;
+    renderHistorialBody();
   }
 
   async function guardarAjuste(){
