@@ -373,7 +373,7 @@
         <p class="footnote">Datos reales — guardados en Supabase. Migrado inicialmente desde tu Sheet de Proyecciones 2026.</p>
       </div>
 
-      <div class="banda-toggle-wrap">
+      <div class="banda-toggle-wrap proy-banda">
         <span class="banda-toggle-label">Banda:</span>
         <div class="banda-toggle">
           <button class="banda-btn" data-banda="baja" onclick="setBandaProy('baja')">Baja</button>
@@ -431,7 +431,7 @@
           </select>
           <span class="caret">▾</span>
         </div>
-        <div class="banda-toggle-wrap" style="margin-bottom:0;">
+        <div class="banda-toggle-wrap proy-banda" style="margin-bottom:0;">
           <span class="banda-toggle-label">Banda:</span>
           <div class="banda-toggle">
             <button class="banda-btn" data-banda="baja" onclick="setBandaProy('baja')">Baja</button>
@@ -515,6 +515,25 @@
   <!-- ===================== TAB 3: REAL VS PROYECCIÓN ===================== -->
   <div class="view" id="vs">
 
+    <div class="banda-toggle-wrap vs-banda">
+      <span class="banda-toggle-label">Objetivo vs. banda:</span>
+      <div class="banda-toggle">
+        <button class="banda-btn" data-banda="baja" onclick="setBandaVs('baja')">Baja</button>
+        <button class="banda-btn active" data-banda="media" onclick="setBandaVs('media')">Media</button>
+        <button class="banda-btn" data-banda="alta" onclick="setBandaVs('alta')">Alta</button>
+      </div>
+    </div>
+
+    <div class="banda-toggle-wrap" id="vsPeriodoWrap">
+      <span class="banda-toggle-label">Ver por:</span>
+      <div class="banda-toggle">
+        <button class="banda-btn active" data-gran="mes" onclick="setGranularidadVs('mes')">Mes</button>
+        <button class="banda-btn" data-gran="trimestre" onclick="setGranularidadVs('trimestre')">Trimestre</button>
+        <button class="banda-btn" data-gran="anio" onclick="setGranularidadVs('anio')">Año</button>
+      </div>
+      <div id="vsFechaSelectores" style="display:flex; gap:6px; align-items:center;"></div>
+    </div>
+
     <div class="kpi-row" id="vsKpiRow">
       <div class="kpi-card"><div class="kpi-label" id="vsRevLabel">Revenue — mes actual</div><div class="kpi-value" style="font-size:19px;">
           <span id="vsRevReal">—</span> <span style="font-size:11px;color:#8a8677;font-weight:600;">/ <span id="vsRevObj">—</span> obj.</span></div><div class="kpi-delta" id="vsRevDelta">—</div></div>
@@ -530,7 +549,7 @@
       <div class="section-title"><div class="left">Cumplimiento por grupo — <span id="vsMesTituloTabla">mes actual</span></div></div>
       <div class="scroll-x">
       <table>
-        <thead><tr><th>Grupo</th><th class="num">Revenue real</th><th class="num">Revenue objetivo</th><th class="num">% cumplimiento</th><th>Estatus</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Grupo</th><th class="num">Revenue real</th><th class="num" id="vsRevObjHead">Revenue objetivo</th><th class="num">% cumplimiento</th><th>Estatus</th><th>Acciones</th></tr></thead>
         <tbody id="vsBody">
           <tr><td colspan="6" style="text-align:center;color:#a8a498;">Cargando datos reales…</td></tr>
         </tbody>
@@ -740,7 +759,7 @@
     return true;
   }
 
-  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); cargarRealVsProy(); });
+  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); renderSelectoresFechaVs(); cargarRealVsProy(); });
 
   // ---------- tabs principales ----------
   document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
@@ -888,15 +907,24 @@
 
   function setBandaProy(b){
     bandaProy = b;
-    document.querySelectorAll('.banda-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.banda === b));
+    document.querySelectorAll('.proy-banda .banda-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.banda === b));
     renderProyOverview();
     if(currentDetalleGrupo) cargarDetalleGrupo(currentDetalleGrupo);
   }
 
-  function campoBanda(base){
-    // base: 'adr' | 'occ_pct' | 'revenue_mensual' -> variante segun bandaProy
-    if(bandaProy === 'baja') return base === 'adr' ? 'adr_baja' : base === 'occ_pct' ? 'occ_baja_pct' : 'revenue_baja';
-    if(bandaProy === 'alta') return base === 'adr' ? 'adr_alta' : base === 'occ_pct' ? 'occ_alta_pct' : 'revenue_alta';
+  let bandaVs = 'media';
+
+  function setBandaVs(b){
+    bandaVs = b;
+    document.querySelectorAll('.vs-banda .banda-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.banda === b));
+    cargarRealVsProy();
+  }
+
+  function campoBanda(base, banda){
+    // base: 'adr' | 'occ_pct' | 'revenue_mensual' -> variante segun la banda (default bandaProy)
+    banda = banda || bandaProy;
+    if(banda === 'baja') return base === 'adr' ? 'adr_baja' : base === 'occ_pct' ? 'occ_baja_pct' : 'revenue_baja';
+    if(banda === 'alta') return base === 'adr' ? 'adr_alta' : base === 'occ_pct' ? 'occ_alta_pct' : 'revenue_alta';
     return base;
   }
   const MESES_NOMBRE = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -1339,23 +1367,63 @@
     return {cls:'down', html:'▼ ' + Math.round(pct) + sufijo};
   }
 
+  const hoyVs = new Date();
+  let vsGranularidad = 'mes';
+  let vsMesSel = hoyVs.getMonth() + 1;
+  let vsTrimSel = Math.floor(hoyVs.getMonth() / 3) + 1;
+  let vsAnioSel = hoyVs.getFullYear();
+
+  function setGranularidadVs(g){
+    vsGranularidad = g;
+    document.querySelectorAll('#vsPeriodoWrap .banda-btn[data-gran]').forEach(b => b.classList.toggle('active', b.dataset.gran === g));
+    renderSelectoresFechaVs();
+    cargarRealVsProy();
+  }
+
+  function selEstilo(){ return 'font-size:11px; padding:4px 8px; border:1px solid #ddd8cc; border-radius:14px; background:#fff; font-family:inherit; color:#1f2430;'; }
+
+  function renderSelectoresFechaVs(){
+    const wrap = document.getElementById('vsFechaSelectores');
+    const anioHoy = hoyVs.getFullYear();
+    const anios = [anioHoy - 1, anioHoy, anioHoy + 1];
+    const optsAnio = anios.map(a => `<option value="${a}" ${a === vsAnioSel ? 'selected' : ''}>${a}</option>`).join('');
+    const selectAnio = `<select style="${selEstilo()}" onchange="vsAnioSel=parseInt(this.value,10); cargarRealVsProy();">${optsAnio}</select>`;
+    if(vsGranularidad === 'mes'){
+      const optsMes = MESES_NOMBRE.map((m,i) => `<option value="${i+1}" ${i+1 === vsMesSel ? 'selected' : ''}>${m}</option>`).join('');
+      wrap.innerHTML = `<select style="${selEstilo()}" onchange="vsMesSel=parseInt(this.value,10); cargarRealVsProy();">${optsMes}</select>` + selectAnio;
+    } else if(vsGranularidad === 'trimestre'){
+      const optsQ = [1,2,3,4].map(q => `<option value="${q}" ${q === vsTrimSel ? 'selected' : ''}>Q${q}</option>`).join('');
+      wrap.innerHTML = `<select style="${selEstilo()}" onchange="vsTrimSel=parseInt(this.value,10); cargarRealVsProy();">${optsQ}</select>` + selectAnio;
+    } else {
+      wrap.innerHTML = selectAnio;
+    }
+  }
+
+  function mesesDeSeleccionVs(){
+    if(vsGranularidad === 'mes') return [vsMesSel];
+    if(vsGranularidad === 'trimestre'){ const start = (vsTrimSel - 1) * 3 + 1; return [start, start+1, start+2]; }
+    return [1,2,3,4,5,6,7,8,9,10,11,12];
+  }
+
+  function labelPeriodoVs(){
+    if(vsGranularidad === 'mes') return MESES_NOMBRE[vsMesSel-1] + ' ' + vsAnioSel;
+    if(vsGranularidad === 'trimestre') return 'Q' + vsTrimSel + ' ' + vsAnioSel;
+    return String(vsAnioSel);
+  }
+
   async function cargarRealVsProy(){
-    // Usamos el último mes ya cerrado (no el mes en curso): un mes a medias
-    // siempre se ve con ocupación/revenue bajísimos porque todavía le faltan
-    // días por reservarse, y no es comparable contra un objetivo de mes completo.
-    const now = new Date();
-    const mesAnteriorDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const anio = mesAnteriorDate.getFullYear();
-    const mes = mesAnteriorDate.getMonth() + 1;
-    document.getElementById('vsMesTituloTabla').textContent = MESES_NOMBRE[mes-1] + ' ' + anio + ' (último mes cerrado)';
+    const anio = vsAnioSel;
+    const meses = mesesDeSeleccionVs();
+    const labelPeriodo = labelPeriodoVs();
+    document.getElementById('vsMesTituloTabla').textContent = labelPeriodo;
     ['vsRevLabel','vsOccLabel','vsAdrLabel'].forEach(id => {
       const base = document.getElementById(id).textContent.split(' — ')[0];
-      document.getElementById(id).textContent = base + ' — ' + MESES_NOMBRE[mes-1] + ' ' + anio;
+      document.getElementById(id).textContent = base + ' — ' + labelPeriodo;
     });
 
     const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }] = await Promise.all([
-      sb.from('real_mensual').select('*').eq('anio', anio).eq('mes', mes),
-      sb.from('proy_mensual').select('*').eq('anio', anio).eq('mes', mes),
+      sb.from('real_mensual').select('*').eq('anio', anio).in('mes', meses),
+      sb.from('proy_mensual').select('*').eq('anio', anio).in('mes', meses),
       sb.from('proy_grupos').select('grupo, unidades_activas'),
       sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true)
     ]);
@@ -1367,8 +1435,26 @@
       return;
     }
 
-    const realByGrupo = {}; (real || []).forEach(r => realByGrupo[r.grupo] = r);
-    const proyByGrupo = {}; (proy || []).forEach(r => proyByGrupo[r.grupo] = r);
+    const campoRevObj = campoBanda('revenue_mensual', bandaVs);
+    document.getElementById('vsRevObjHead').textContent = 'Revenue objetivo' + (bandaVs === 'baja' ? ' (baja)' : bandaVs === 'alta' ? ' (alta)' : '');
+
+    // Con Q/Año un grupo puede tener varias filas mensuales: agregamos por grupo.
+    const realByGrupo = {}; (real || []).forEach(r => {
+      if(!realByGrupo[r.grupo]) realByGrupo[r.grupo] = { revenue_mensual: 0, noches_reservadas: 0, noches_disponibles: 0 };
+      realByGrupo[r.grupo].revenue_mensual += Number(r.revenue_mensual) || 0;
+      realByGrupo[r.grupo].noches_reservadas += Number(r.noches_reservadas) || 0;
+      realByGrupo[r.grupo].noches_disponibles += Number(r.noches_disponibles) || 0;
+    });
+    const proyByGrupo = {}; (proy || []).forEach(r => {
+      if(!proyByGrupo[r.grupo]) proyByGrupo[r.grupo] = { [campoRevObj]: 0, noches_disponibles: 0, noches_reservadas: 0, [campoBanda('occ_pct', bandaVs)]: null, _occNum: 0, _occDen: 0 };
+      const acc = proyByGrupo[r.grupo];
+      acc[campoRevObj] += Number(r[campoRevObj]) || 0;
+      acc.noches_disponibles += Number(r.noches_disponibles) || 0;
+      acc.noches_reservadas += Number(r.noches_reservadas) || 0;
+      const occ = Number(r[campoBanda('occ_pct', bandaVs)]);
+      const disp = Number(r.noches_disponibles) || 0;
+      if(!isNaN(occ)){ acc._occNum += disp * occ / 100; acc._occDen += disp; }
+    });
     const unidadesObjByGrupo = {}; (grupos || []).forEach(g => unidadesObjByGrupo[g.grupo] = g.unidades_activas);
 
     const todosLosGrupos = Array.from(new Set([...Object.keys(realByGrupo), ...Object.keys(proyByGrupo)]));
@@ -1376,8 +1462,8 @@
     allRealVsProy = todosLosGrupos.map(grupo => {
       const r = realByGrupo[grupo];
       const p = proyByGrupo[grupo];
-      const revReal = r ? Number(r.revenue_mensual) || 0 : 0;
-      const revObj = p ? Number(p.revenue_mensual) || 0 : null;
+      const revReal = r ? r.revenue_mensual : 0;
+      const revObj = p ? p[campoRevObj] : null;
       const pctCump = (revObj && revObj > 0) ? (revReal / revObj) * 100 : null;
       return { grupo, revReal, revObj, pctCump, real: r || null, proy: p || null };
     }).sort((a,b) => {
@@ -1406,13 +1492,21 @@
     // ---- KPIs agregados ----
     const sumReal = (key) => (real || []).reduce((a,r) => a + (Number(r[key]) || 0), 0);
     const sumProy = (key) => (proy || []).reduce((a,r) => a + (Number(r[key]) || 0), 0);
+    const campoAdrObj = campoBanda('adr', bandaVs), campoOccObj = campoBanda('occ_pct', bandaVs);
 
     const revRealTotal = sumReal('revenue_mensual');
-    const revObjTotal = sumProy('revenue_mensual');
+    const revObjTotal = sumProy(campoRevObj);
     const nochesResReal = sumReal('noches_reservadas');
     const nochesDispReal = sumReal('noches_disponibles');
-    const nochesResProy = sumProy('noches_reservadas');
     const nochesDispProy = sumProy('noches_disponibles');
+    // Noches reservadas objetivo: en media viene guardado; en baja/alta se deriva de
+    // la ocupación de esa banda sobre las mismas noches disponibles (no hay columna propia).
+    const nochesResProy = (proy || []).reduce((a,r) => {
+      if(bandaVs === 'media') return a + (Number(r.noches_reservadas) || 0);
+      const occ = Number(r[campoOccObj]);
+      const disp = Number(r.noches_disponibles) || 0;
+      return a + (isNaN(occ) ? 0 : Math.round(disp * occ / 100));
+    }, 0);
     const occReal = nochesDispReal > 0 ? (nochesResReal / nochesDispReal) * 100 : null;
     const occObj = nochesDispProy > 0 ? (nochesResProy / nochesDispProy) * 100 : null;
     const adrReal = nochesResReal > 0 ? revRealTotal / nochesResReal : null;
