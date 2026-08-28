@@ -1352,11 +1352,13 @@
   // ---------- REAL VS PROYECCIÓN ----------
   let allRealVsProy = [];
 
-  function estatusCumplimiento(pct){
-    if(pct === null) return {label:'—', cls:''};
-    if(pct >= 100) return {label:'Arriba', cls:'b-baja'};
-    if(pct >= 90) return {label:'Cerca', cls:'b-baja'};
-    if(pct >= 70) return {label:'Atención', cls:'b-media'};
+  // Estado de pace-check (Superado / En línea / Abajo), a partir de la brecha en puntos
+  // porcentuales vs. la curva ideal de cumplimiento (no del % crudo real/objetivo).
+  // >= +3 pts -> Superado · entre -3 y +3 -> En línea · < -3 -> Abajo.
+  function estatusPaceCheck(brechaPts){
+    if(brechaPts === null || brechaPts === undefined || isNaN(brechaPts)) return {label:'—', cls:''};
+    if(brechaPts >= 3) return {label:'Superado', cls:'b-baja'};
+    if(brechaPts >= -3) return {label:'En línea', cls:'b-media'};
     return {label:'Abajo', cls:'b-alta'};
   }
 
@@ -1424,20 +1426,29 @@
     const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }, { data: historialReal }] = await Promise.all([
       sb.from('real_mensual').select('*').eq('anio', anio).in('mes', meses),
       sb.from('proy_mensual').select('*').eq('anio', anio).in('mes', meses),
-      sb.from('proy_grupos').select('grupo, unidades_activas'),
+      sb.from('proy_grupos').select('grupo, unidades_activas, tiene_curva_cumplimiento, pace_check_brecha_pts, pace_check_lectura, pace_check_periodo, pace_check_fecha'),
       sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true),
       sb.from('real_mensual').select('grupo, anio, mes, revenue_mensual')
     ]);
 
-    // Meses cerrados con revenue real > 0, histórico completo (no solo el periodo seleccionado).
-    // 0 meses -> proyección nueva, sin curva de cumplimiento todavía (Estado en blanco).
-    // 1-6 meses -> curva propia poco confiable, se marca con "!" junto al Estado.
+    // Meses cerrados reales = meses que ya transcurrieron por completo (antes del mes en curso)
+    // y que tienen revenue real > 0. Un mes futuro puede tener revenue_mensual > 0 en real_mensual
+    // (OTB / on-the-books) sin que el mes haya cerrado -- por eso se exige que sea estrictamente
+    // anterior al mes actual, no solo que tenga revenue.
+    const hoyCierre = new Date();
+    const anioMesActual = hoyCierre.getFullYear() * 100 + (hoyCierre.getMonth() + 1);
     const mesesCerradosByGrupo = {};
     (historialReal || []).forEach(r => {
-      if(Number(r.revenue_mensual) > 0){
+      const anioMesFila = Number(r.anio) * 100 + Number(r.mes);
+      if(anioMesFila < anioMesActual && Number(r.revenue_mensual) > 0){
         (mesesCerradosByGrupo[r.grupo] = mesesCerradosByGrupo[r.grupo] || new Set()).add(r.anio + '-' + r.mes);
       }
     });
+
+    // Ficha de pace-check por grupo (solo existe -- de verdad -- para los grupos que tienen
+    // una curva de cumplimiento propia construida por un analista; no se infiere de los datos).
+    const paceCheckByGrupo = {};
+    (grupos || []).forEach(g => { paceCheckByGrupo[g.grupo] = g; });
 
     const tbody = document.getElementById('vsBody');
     if(er || ep){
@@ -1487,15 +1498,18 @@
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a8a498;">Sin datos reales ni proyectados para este mes todavía.</td></tr>';
     } else {
       tbody.innerHTML = allRealVsProy.map(row => {
-        const est = estatusCumplimiento(row.pctCump);
         const grupoEsc = row.grupo.replace(/'/g,"\\'");
+        const ficha = paceCheckByGrupo[row.grupo];
         const mesesCerrados = mesesCerradosByGrupo[row.grupo] ? mesesCerradosByGrupo[row.grupo].size : 0;
         let estadoHtml;
-        if(mesesCerrados === 0){
-          // Proyección nueva: todavía no hay ni un mes cerrado con revenue real -> sin curva de cumplimiento.
-          estadoHtml = '<span title="Proyección nueva -- todavía no hay curva de cumplimiento propia" style="color:#a8a498;">—</span>';
+        if(!ficha || !ficha.tiene_curva_cumplimiento){
+          // Sin curva de cumplimiento propia todavía (grupo nuevo o sin pace-check construido
+          // por un analista) -> Estado en blanco, no se infiere ni se marca "!" sin un Estado real.
+          estadoHtml = '<span title="Todavía no hay curva de cumplimiento propia para este grupo" style="color:#a8a498;">—</span>';
         } else {
-          estadoHtml = est.label === '—' ? '—' : `<span class="badge ${est.cls}">${est.label}</span>`;
+          const est = estatusPaceCheck(Number(ficha.pace_check_brecha_pts));
+          const tituloBrecha = `${ficha.pace_check_periodo || ''}: brecha ${Number(ficha.pace_check_brecha_pts).toFixed(2)} pts vs. curva ideal (${ficha.pace_check_lectura || ''})`;
+          estadoHtml = est.label === '—' ? '—' : `<span class="badge ${est.cls}" title="${tituloBrecha}">${est.label}</span>`;
           if(mesesCerrados <= 6){
             estadoHtml += ` <span title="Solo ${mesesCerrados} mes(es) cerrado(s) -- curva de cumplimiento poco confiable todavía" style="color:#b3312c;font-weight:700;cursor:help;">!</span>`;
           }
