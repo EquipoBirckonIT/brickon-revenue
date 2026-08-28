@@ -425,6 +425,39 @@
 
       <div class="card">
         <div class="section-title">
+          <div class="left">Proyecciones Comercial <span class="count" id="comercialCount">0</span></div>
+          <div class="right"><button class="btn-dark btn-sm" onclick="abrirFormComercial()">+ Agregar</button></div>
+        </div>
+
+        <div id="comercialForm" style="display:none; background:#faf9f6; border:1px dashed #d8d4c8; border-radius:10px; padding:14px 16px; margin-bottom:16px;">
+          <input type="hidden" id="comercialEditId">
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:12px;">
+            <div><label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">Especialista</label><input type="text" id="comEspecialista" placeholder="Ej. Catalina" style="width:100%; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;"></div>
+            <div><label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">Comisión %</label><input type="text" id="comComision" placeholder="Ej. 15" style="width:100%; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;"></div>
+            <div><label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">Grupo</label><input type="text" id="comGrupo" placeholder="Nombre del proyecto" style="width:100%; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;"></div>
+            <div><label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">Unidades</label><input type="text" id="comUnidades" placeholder="Ej. 10" style="width:100%; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;"></div>
+          </div>
+          <div id="comercialMesesInputs" style="display:grid; grid-template-columns: repeat(6, 1fr); gap:10px; margin-bottom:12px;"></div>
+          <div style="margin-bottom:12px;"><label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">Notas</label><input type="text" id="comNotas" placeholder="Opcional" style="width:100%; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;"></div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-dark btn-sm" onclick="guardarComercial()">💾 Guardar</button>
+            <button class="btn-ghost btn-sm" onclick="cancelarFormComercial()">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="scroll-x">
+        <table>
+          <thead><tr id="comercialHead"><th>Especialista</th><th class="col-comision">Comisión</th><th>Grupo</th><th class="num col-narrow">Unidades</th><th class="num">Total 6m</th><th class="col-wide">Notas</th><th class="num">Acciones</th></tr></thead>
+          <tbody id="comercialBody">
+            <tr><td colspan="13" style="text-align:center;color:#a8a498;">Sin proyectos comerciales todavía.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="footnote">Proyectos aún no confirmados en onboarding. No se incluyen en los KPIs del portafolio ni tienen historial de cambios.</p>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
           <div class="left">
             <span class="btn-link" style="cursor:pointer;" onclick="togglePanel('proyTerminadosPanel')">▾ Terminados <span class="count" id="proyTerminadosCount">0 grupos</span></span>
           </div>
@@ -992,6 +1025,144 @@
     renderProyOverview();
     cargarConsejo();
     cargarAjustesGlobal();
+    cargarComercial();
+  }
+
+  // ====== PROYECCIONES COMERCIAL (pipeline, aún no en onboarding) ======
+  let allComercial = [];
+
+  async function cargarComercial(){
+    const { data, error } = await sb.from('proy_comercial').select('*').order('created_at', {ascending:true});
+    if(error){ console.error(error); return; }
+    allComercial = data || [];
+    renderComercial();
+  }
+
+  function totalMesesComercial(row){
+    const ventana = ventanaMeses();
+    const meses = Array.isArray(row.meses) ? row.meses : [];
+    return ventana.reduce((s, v) => {
+      const m = meses.find(x => x.anio === v.anio && x.mes === v.mes);
+      return s + (m && m.monto != null ? Number(m.monto) : 0);
+    }, 0);
+  }
+
+  function renderComercial(){
+    const ventana = ventanaMeses();
+    const anioBase = ventana[0].anio;
+    document.getElementById('comercialHead').innerHTML =
+      '<th>Especialista</th><th class="col-comision">Comisión</th><th>Grupo</th><th class="num col-narrow">Unidades</th>' +
+      ventana.map(v => `<th class="num">${MESES_NOMBRE[v.mes-1].slice(0,3)}${v.anio !== anioBase ? " '" + String(v.anio).slice(2) : ''}</th>`).join('') +
+      '<th class="num">Total 6m</th><th class="col-wide">Notas</th><th class="num">Acciones</th>';
+
+    document.getElementById('comercialCount').textContent = allComercial.length;
+    const tbody = document.getElementById('comercialBody');
+    if(allComercial.length === 0){
+      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:#a8a498;">Sin proyectos comerciales todavía.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = allComercial.map(row => {
+      const meses = Array.isArray(row.meses) ? row.meses : [];
+      const celdas = ventana.map(v => {
+        const m = meses.find(x => x.anio === v.anio && x.mes === v.mes);
+        return `<td class="num">${m && m.monto != null ? fmtMoney(Number(m.monto)) : '—'}</td>`;
+      }).join('');
+      return `<tr>
+        <td>${row.especialista || '—'}</td>
+        <td>${row.comision_pct != null ? Number(row.comision_pct) + '%' : '—'}</td>
+        <td class="unit-name">${row.grupo}</td>
+        <td class="num col-narrow">${row.unidades ?? '—'}</td>
+        ${celdas}
+        <td class="num">${fmtMoney(totalMesesComercial(row))}</td>
+        <td class="col-wide">${row.notas || '—'}</td>
+        <td class="num" style="white-space:nowrap;">
+          <button class="btn-icon" style="color:#55524a;" title="Editar" onclick="editarComercial('${row.id}')">✏️</button>
+          <button class="btn-icon" title="Eliminar" onclick="borrarComercial('${row.id}')">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderComercialMesesInputs(prefillMeses){
+    const ventana = ventanaMeses();
+    const anioBase = ventana[0].anio;
+    const meses = Array.isArray(prefillMeses) ? prefillMeses : [];
+    document.getElementById('comercialMesesInputs').innerHTML = ventana.map(v => {
+      const m = meses.find(x => x.anio === v.anio && x.mes === v.mes);
+      const label = MESES_NOMBRE[v.mes-1].slice(0,3) + (v.anio !== anioBase ? " '" + String(v.anio).slice(2) : '');
+      const val = m && m.monto != null ? m.monto : '';
+      return `<div><label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">${label}</label><input type="text" class="comercial-mes-monto" data-anio="${v.anio}" data-mes="${v.mes}" value="${val}" placeholder="0" style="width:100%; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;"></div>`;
+    }).join('');
+  }
+
+  function abrirFormComercial(){
+    document.getElementById('comercialEditId').value = '';
+    document.getElementById('comEspecialista').value = '';
+    document.getElementById('comComision').value = '';
+    document.getElementById('comGrupo').value = '';
+    document.getElementById('comUnidades').value = '';
+    document.getElementById('comNotas').value = '';
+    renderComercialMesesInputs(null);
+    document.getElementById('comercialForm').style.display = 'block';
+  }
+
+  function editarComercial(id){
+    const row = allComercial.find(x => x.id === id);
+    if(!row) return;
+    document.getElementById('comercialEditId').value = row.id;
+    document.getElementById('comEspecialista').value = row.especialista || '';
+    document.getElementById('comComision').value = row.comision_pct ?? '';
+    document.getElementById('comGrupo').value = row.grupo || '';
+    document.getElementById('comUnidades').value = row.unidades ?? '';
+    document.getElementById('comNotas').value = row.notas || '';
+    renderComercialMesesInputs(row.meses);
+    document.getElementById('comercialForm').style.display = 'block';
+    document.getElementById('comercialForm').scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  function cancelarFormComercial(){
+    document.getElementById('comercialForm').style.display = 'none';
+  }
+
+  async function guardarComercial(){
+    const grupo = document.getElementById('comGrupo').value.trim();
+    if(!grupo){ alert('Escribe el nombre del proyecto/grupo.'); return; }
+    const especialista = document.getElementById('comEspecialista').value.trim();
+    const comisionVal = document.getElementById('comComision').value.trim();
+    const unidadesVal = document.getElementById('comUnidades').value.trim();
+    const notas = document.getElementById('comNotas').value.trim();
+    const editId = document.getElementById('comercialEditId').value;
+
+    const meses = [...document.querySelectorAll('.comercial-mes-monto')].map(el => ({
+      anio: Number(el.dataset.anio),
+      mes: Number(el.dataset.mes),
+      monto: el.value.trim() ? parseFloat(el.value.replace(/[^0-9.]/g,'')) : 0
+    }));
+
+    const payload = {
+      especialista: especialista || null,
+      comision_pct: comisionVal ? parseFloat(comisionVal.replace(/[^0-9.]/g,'')) : null,
+      grupo,
+      unidades: unidadesVal ? parseInt(unidadesVal.replace(/[^0-9]/g,''), 10) : null,
+      meses,
+      notas: notas || null,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = editId
+      ? await sb.from('proy_comercial').update(payload).eq('id', editId)
+      : await sb.from('proy_comercial').insert(payload);
+    if(error){ alert('No se pudo guardar: ' + error.message); return; }
+
+    document.getElementById('comercialForm').style.display = 'none';
+    await cargarComercial();
+  }
+
+  async function borrarComercial(id){
+    if(!confirm('¿Eliminar este proyecto comercial? No se puede deshacer.')) return;
+    const { error } = await sb.from('proy_comercial').delete().eq('id', id);
+    if(error){ alert('No se pudo eliminar: ' + error.message); return; }
+    await cargarComercial();
   }
 
   function revenueDeProy(grupo, anio, mes, banda){
