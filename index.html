@@ -996,11 +996,18 @@
     return any ? sum : null;
   }
 
+  // Caption sutil bajo el nombre del grupo con su estado (Activo/Terminated/En Onboarding/Kickoff/Sin Revenue/...).
+  // No es un badge -- deliberadamente discreto para no competir con el nombre del grupo.
+  function estadoGrupoCaption(g){
+    if(!g.estado_grupo) return '';
+    return `<span style="display:block; font-size:10px; font-weight:400; color:#a8a498; line-height:1.4; margin-top:1px;">${g.estado_grupo}</span>`;
+  }
+
   function renderProyOverview(){
     const ventana = ventanaMeses();
     const revenueDe = revenueDeProy;
-    const activos = allProyGrupos.filter(g => g.estado !== 'terminado');
-    const terminados = allProyGrupos.filter(g => g.estado === 'terminado');
+    const activos = allProyGrupos.filter(g => g.estado_grupo !== 'Terminated');
+    const terminados = allProyGrupos.filter(g => g.estado_grupo === 'Terminated');
     const hoy = new Date();
     const anioActual = hoy.getFullYear();
 
@@ -1020,7 +1027,7 @@
         const total6m = valores.reduce((a,v) => a + (v || 0), 0);
         return `<tr>
         <td>${g.especialista || '—'}</td>
-        <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a></td>
+        <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a>${estadoGrupoCaption(g)}</td>
         <td class="num col-narrow">${g.unidades_activas ?? '—'}</td>
         ${valores.map(v => `<td class="num">${v === null ? '—' : fmtMoney(v)}</td>`).join('')}
         <td class="num">${fmtMoney(total6m)}</td>
@@ -1058,7 +1065,7 @@
       ? '<tr><td colspan="5" style="text-align:center;color:#a8a498;">Sin grupos terminados.</td></tr>'
       : terminados.map(g => `<tr>
         <td>${g.especialista || '—'}</td>
-        <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a></td>
+        <td class="unit-name"><a href="#" class="btn-link" onclick="irADetalle('${g.grupo.replace(/'/g,"\\'")}'); return false;">${g.grupo}</a>${estadoGrupoCaption(g)}</td>
         <td class="num">${g.unidades_activas ?? '—'}</td>
         <td class="num">${fmtMoney(g.total_2026)}</td>
         <td>${g.notas || '—'}</td>
