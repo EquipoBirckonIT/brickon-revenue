@@ -1421,12 +1421,23 @@
       document.getElementById(id).textContent = base + ' — ' + labelPeriodo;
     });
 
-    const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }] = await Promise.all([
+    const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }, { data: historialReal }] = await Promise.all([
       sb.from('real_mensual').select('*').eq('anio', anio).in('mes', meses),
       sb.from('proy_mensual').select('*').eq('anio', anio).in('mes', meses),
       sb.from('proy_grupos').select('grupo, unidades_activas'),
-      sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true)
+      sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true),
+      sb.from('real_mensual').select('grupo, anio, mes, revenue_mensual')
     ]);
+
+    // Meses cerrados con revenue real > 0, histórico completo (no solo el periodo seleccionado).
+    // 0 meses -> proyección nueva, sin curva de cumplimiento todavía (Estado en blanco).
+    // 1-6 meses -> curva propia poco confiable, se marca con "!" junto al Estado.
+    const mesesCerradosByGrupo = {};
+    (historialReal || []).forEach(r => {
+      if(Number(r.revenue_mensual) > 0){
+        (mesesCerradosByGrupo[r.grupo] = mesesCerradosByGrupo[r.grupo] || new Set()).add(r.anio + '-' + r.mes);
+      }
+    });
 
     const tbody = document.getElementById('vsBody');
     if(er || ep){
@@ -1478,12 +1489,23 @@
       tbody.innerHTML = allRealVsProy.map(row => {
         const est = estatusCumplimiento(row.pctCump);
         const grupoEsc = row.grupo.replace(/'/g,"\\'");
+        const mesesCerrados = mesesCerradosByGrupo[row.grupo] ? mesesCerradosByGrupo[row.grupo].size : 0;
+        let estadoHtml;
+        if(mesesCerrados === 0){
+          // Proyección nueva: todavía no hay ni un mes cerrado con revenue real -> sin curva de cumplimiento.
+          estadoHtml = '<span title="Proyección nueva -- todavía no hay curva de cumplimiento propia" style="color:#a8a498;">—</span>';
+        } else {
+          estadoHtml = est.label === '—' ? '—' : `<span class="badge ${est.cls}">${est.label}</span>`;
+          if(mesesCerrados <= 6){
+            estadoHtml += ` <span title="Solo ${mesesCerrados} mes(es) cerrado(s) -- curva de cumplimiento poco confiable todavía" style="color:#b3312c;font-weight:700;cursor:help;">!</span>`;
+          }
+        }
         return `<tr>
           <td class="unit-name">${row.grupo}</td>
           <td class="num">${fmtMoney(row.revReal)}</td>
           <td class="num">${row.revObj !== null ? fmtMoney(row.revObj) : '—'}</td>
           <td class="num">${row.pctCump !== null ? Math.round(row.pctCump) + '%' : '—'}</td>
-          <td>${est.label === '—' ? '—' : `<span class="badge ${est.cls}">${est.label}</span>`}</td>
+          <td>${estadoHtml}</td>
           <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('${grupoEsc}')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('${grupoEsc}')">🔁 Regenerar</button></td>
         </tr>`;
       }).join('');
