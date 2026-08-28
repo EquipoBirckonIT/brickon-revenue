@@ -102,6 +102,7 @@
   .scroll-x { overflow-x: auto; }
   .unit-name { font-weight: 700; color: #1f2430; }
   .col-narrow { width: 70px; max-width: 70px; }
+  .col-comision { width: 58px; max-width: 58px; }
   .col-wide { min-width: 260px; }
   .unit-sub { font-size: 10px; color: #a8a498; }
   .num { text-align: right; }
@@ -395,7 +396,7 @@
         <div style="margin:-6px 0 10px;"><button class="btn-ghost btn-sm" onclick="descargarCSVProyOverview()">⬇️ Descargar CSV</button></div>
         <div class="scroll-x">
         <table>
-          <thead><tr id="proyOverviewHead"><th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num col-narrow" style="white-space:normal; line-height:1.25;">Unidades<br>activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
+          <thead><tr id="proyOverviewHead"><th>Especialista</th><th class="col-comision">Comisión</th><th>Grupo</th><th class="num col-narrow" style="white-space:normal; line-height:1.25;">Unidades<br>activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
           <tbody id="proyOverviewBody">
             <tr><td colspan="13" style="text-align:center;color:#a8a498;">Cargando grupos…</td></tr>
           </tbody>
@@ -413,7 +414,7 @@
         <div class="hist-panel" id="proyTerminadosPanel">
           <div class="scroll-x">
           <table>
-            <thead><tr><th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026 (histórico)</th><th>Notas</th></tr></thead>
+            <thead><tr><th>Especialista</th><th class="col-comision">Comisión</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026 (histórico)</th><th>Notas</th></tr></thead>
             <tbody id="proyTerminadosBody"></tbody>
           </table>
           </div>
@@ -491,9 +492,11 @@
           <div class="confirm-msg" id="ajusteConfirm">Guardado — se creó copia del valor anterior en Historial y una entrada nueva en la pestaña Ajustes.</div>
         </div>
 
-        <div class="note-box" id="detNotasBox" style="display:none; background:#fdeeee; border-color:#f3cccc; color:#7a2323;">
+        <div class="note-box" id="detNotasBox" style="background:#fff8ec; border-color:#f0dfb8; color:#6d4c00;">
           <strong>Notas del grupo</strong>
-          <span id="detNotasTexto"></span>
+          <textarea id="detNotasInput" style="width:100%; min-height:56px; font-size:11.5px; padding:8px 9px; border:1px solid #e8d9b0; border-radius:7px; font-family:inherit; background:#fffdf8; color:#4a3a00; resize:vertical;" placeholder="Se completan automáticamente con los ajustes cargados, pero puedes editarlas aquí"></textarea>
+          <div style="margin-top:8px;"><button class="btn-dark btn-sm" onclick="guardarNotasGrupo()">Guardar notas</button>
+          <span class="confirm-msg" id="notasConfirm" style="display:inline-block; margin-top:0; margin-left:8px; vertical-align:middle;">Guardado.</span></div>
         </div>
       </div>
     </div>
@@ -1026,7 +1029,7 @@
 
     const anioBase = ventana[0].anio;
     const headRow = document.getElementById('proyOverviewHead');
-    headRow.innerHTML = '<th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num col-narrow" style="white-space:normal; line-height:1.25;">Unidades<br>activas</th>' +
+    headRow.innerHTML = '<th>Especialista</th><th class="col-comision">Comisión</th><th>Grupo</th><th class="num col-narrow" style="white-space:normal; line-height:1.25;">Unidades<br>activas</th>' +
       ventana.map(v => `<th class="num">${MESES_NOMBRE[v.mes-1].slice(0,3)}${v.anio !== anioBase ? " '" + String(v.anio).slice(2) : ''}</th>`).join('') +
       '<th class="num">Total 6m</th><th class="num">Total 2026' + bandaSufijo() + '</th><th class="col-wide">Notas</th>';
 
@@ -1217,12 +1220,8 @@
       totalAnioBanda = (mensual && mensual.length) ? mensual.reduce((s,m) => s + (Number(m[campoRev]) || 0), 0) : null;
     }
     document.getElementById('detTotal2026').textContent = totalAnioBanda != null ? fmtMoney(totalAnioBanda) : '—';
-    if(g && g.notas){
-      document.getElementById('detNotasBox').style.display = 'block';
-      document.getElementById('detNotasTexto').textContent = g.notas;
-    } else {
-      document.getElementById('detNotasBox').style.display = 'none';
-    }
+    document.getElementById('detNotasInput').value = (g && g.notas) ? g.notas : '';
+    document.getElementById('notasConfirm').classList.remove('show');
 
     const mesActualNum = new Date().getMonth() + 1;
     const detBody = document.getElementById('detMensualBody');
@@ -1342,6 +1341,21 @@
     const confirmEl = document.getElementById('ajusteConfirm');
     confirmEl.classList.add('show');
     setTimeout(()=>confirmEl.classList.remove('show'), 5000);
+  }
+
+  async function guardarNotasGrupo(){
+    if(!currentDetalleGrupo){ alert('No hay un grupo seleccionado.'); return; }
+    const nuevaNota = document.getElementById('detNotasInput').value.trim();
+    const { error } = await sb.from('proy_grupos').update({ notas: nuevaNota || null, updated_at: new Date().toISOString() }).eq('grupo', currentDetalleGrupo);
+    if(error){ alert('No se pudieron guardar las notas: ' + error.message); return; }
+
+    const g = allProyGrupos.find(x => x.grupo === currentDetalleGrupo);
+    if(g) g.notas = nuevaNota || null;
+    renderProyOverview();
+
+    const confirmEl = document.getElementById('notasConfirm');
+    confirmEl.classList.add('show');
+    setTimeout(()=>confirmEl.classList.remove('show'), 3000);
   }
 
   async function cargarAjustesGlobal(){
