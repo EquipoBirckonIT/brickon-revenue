@@ -395,7 +395,7 @@
         <div style="margin:-6px 0 10px;"><button class="btn-ghost btn-sm" onclick="descargarCSVProyOverview()">⬇️ Descargar CSV</button></div>
         <div class="scroll-x">
         <table>
-          <thead><tr id="proyOverviewHead"><th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num">Unidades activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
+          <thead><tr id="proyOverviewHead"><th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num col-narrow" style="white-space:normal; line-height:1.25;">Unidades<br>activas</th><th class="num">Total 2026</th><th>Notas</th></tr></thead>
           <tbody id="proyOverviewBody">
             <tr><td colspan="13" style="text-align:center;color:#a8a498;">Cargando grupos…</td></tr>
           </tbody>
@@ -1026,7 +1026,7 @@
 
     const anioBase = ventana[0].anio;
     const headRow = document.getElementById('proyOverviewHead');
-    headRow.innerHTML = '<th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num col-narrow">Unidades activas</th>' +
+    headRow.innerHTML = '<th>Especialista</th><th>Comisión</th><th>Grupo</th><th class="num col-narrow" style="white-space:normal; line-height:1.25;">Unidades<br>activas</th>' +
       ventana.map(v => `<th class="num">${MESES_NOMBRE[v.mes-1].slice(0,3)}${v.anio !== anioBase ? " '" + String(v.anio).slice(2) : ''}</th>`).join('') +
       '<th class="num">Total 6m</th><th class="num">Total 2026' + bandaSufijo() + '</th><th class="col-wide">Notas</th>';
 
