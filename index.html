@@ -1821,27 +1821,12 @@
       document.getElementById(id).textContent = base + ' — ' + labelPeriodo;
     });
 
-    const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }, { data: historialReal }, { data: curvaData }] = await Promise.all([
-      sb.from('real_mensual').select('*').eq('anio', anio).in('mes', meses),
-      sb.from('proy_mensual').select('*').eq('anio', anio).in('mes', meses),
-      sb.from('proy_grupos').select('grupo, unidades_activas, estado'),
-      sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true),
-      sb.from('real_mensual').select('grupo, anio, mes, revenue_mensual'),
-      sb.from('curva_cumplimiento_ideal').select('grupo, tipo, dia_relativo, pct_curva')
-    ]);
-
-    // Curva ideal de cumplimiento, en vivo: se toma directo de curva_cumplimiento_ideal (si un
-    // grupo tiene filas ahí, ya tiene curva propia -- no depende de un flag manual aparte), filtrada
-    // al tipo (Mensual/Trimestral) que corresponde al periodo seleccionado. La vista "año" no tiene
-    // curva propia todavía.
+    // Curva ideal de cumplimiento: tipo (Mensual/Trimestral) y día relativo de hoy se calculan
+    // ANTES de pedir los datos, para poder filtrar la consulta a curva_cumplimiento_ideal por tipo
+    // y por una ventana de días alrededor de hoy. La tabla completa ya supera 5,000 filas entre
+    // todos los grupos -- traerla entera se trunca al límite de filas por default de Supabase/PostgREST
+    // y deja "sin curva" (en blanco) a los grupos que caen fuera del corte, aunque sí tengan datos.
     const tipoCurvaActual = tipoCurvaVs();
-    const curvaByGrupo = {};
-    if(tipoCurvaActual){
-      (curvaData || []).forEach(c => {
-        if(c.tipo !== tipoCurvaActual) return;
-        (curvaByGrupo[c.grupo] = curvaByGrupo[c.grupo] || []).push(c);
-      });
-    }
     const periodoInicioVs = inicioPeriodoVs();
     let diaRelativoHoy = null;
     if(periodoInicioVs){
@@ -1849,6 +1834,26 @@
       periodoInicioVs.setHours(0,0,0,0);
       diaRelativoHoy = Math.round((hoyMid - periodoInicioVs) / 86400000);
     }
+    const curvaQuery = (tipoCurvaActual && diaRelativoHoy !== null)
+      ? sb.from('curva_cumplimiento_ideal').select('grupo, tipo, dia_relativo, pct_curva')
+          .eq('tipo', tipoCurvaActual)
+          .gte('dia_relativo', diaRelativoHoy - 10)
+          .lte('dia_relativo', diaRelativoHoy + 10)
+      : Promise.resolve({ data: [] });
+
+    const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }, { data: historialReal }, { data: curvaData }] = await Promise.all([
+      sb.from('real_mensual').select('*').eq('anio', anio).in('mes', meses),
+      sb.from('proy_mensual').select('*').eq('anio', anio).in('mes', meses),
+      sb.from('proy_grupos').select('grupo, unidades_activas, estado'),
+      sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true),
+      sb.from('real_mensual').select('grupo, anio, mes, revenue_mensual'),
+      curvaQuery
+    ]);
+
+    const curvaByGrupo = {};
+    (curvaData || []).forEach(c => {
+      (curvaByGrupo[c.grupo] = curvaByGrupo[c.grupo] || []).push(c);
+    });
 
     // Meses cerrados reales = meses que ya transcurrieron por completo (antes del mes en curso)
     // y que tienen revenue real > 0. Un mes futuro puede tener revenue_mensual > 0 en real_mensual
@@ -1929,7 +1934,8 @@
           estadoHtml = '<span title="Sin objetivo o sin revenue real para comparar en este periodo" style="color:#a8a498;">—</span>';
         } else {
           const filaCurva = curvaMasCercana(filasCurva, diaRelativoHoy);
-          const metaCurva = Number(filaCurva.pct_curva);
+          // pct_curva se guarda como fracción 0-1 en la base (ej. 0.95 = 95%), no como 0-100.
+          const metaCurva = Number(filaCurva.pct_curva) * 100;
           const brecha = row.pctCump - metaCurva;
           const cls = claseBrechaCurva(brecha);
           const diaTxt = filaCurva.dia_relativo >= 0 ? `día ${filaCurva.dia_relativo} del periodo` : `${Math.abs(filaCurva.dia_relativo)} días antes de iniciar`;
