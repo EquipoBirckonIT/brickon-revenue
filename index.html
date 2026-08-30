@@ -179,6 +179,9 @@
   .dot-pending { background: #e4e1da; }
   .dot-future { background: transparent; border: 1px dashed #ddd8cc; }
   .dot-obd { background: #cfcabb; border: 1px solid #b8b19c; }
+  .dot-ok { background: #2e7d4f; }
+  .dot-atencion { background: #d8ae4f; }
+  .dot-critico { background: #b3312c; }
 
   .nota-cell { max-width: 150px; position: relative; }
   .nota-texto { font-size: 11px; color: #1f2430; line-height: 1.3; word-break: break-word; padding-right: 16px; }
@@ -1975,6 +1978,20 @@
     return '<span class="badge b-progreso">Sin check-in</span>';
   }
 
+  // Color del punto de progreso (12 semanas de kickoff), igual al del semáforo semanal.
+  function claseDotEstado(estado){
+    if(estado === 'ok') return 'dot-ok';
+    if(estado === 'atencion') return 'dot-atencion';
+    if(estado === 'critico') return 'dot-critico';
+    return 'dot-done';
+  }
+  function labelEstadoKickoff(estado){
+    if(estado === 'ok') return 'OK';
+    if(estado === 'atencion') return 'Atención';
+    if(estado === 'critico') return 'Crítico';
+    return 'marcada';
+  }
+
   function esJuevesHoy(){
     return new Date().getDay() === 4; // Dom=0 ... Jue=4
   }
@@ -2060,8 +2077,10 @@
         // Semana OBD (la de fecha_kickoff): no cuenta como progreso — pueden llevar solo un par de días.
         const labelObd = semanaDelAnio(inicioKickoff);
         const cObd = checkinsUnidad.find(x => x.semana_num === labelObd);
-        let clsObd = cObd ? 'dot-done' : 'dot-obd';
-        dots.push(`<span class="dot ${clsObd}" title="Semana ${labelObd} — OBD, no cuenta como progreso"></span>`);
+        // El color del semáforo (OK/Atención/Crítico) marcado ese jueves se refleja en el punto;
+        // si aún no se marcó ningún color para esa semana, el punto se queda en el tono neutro de antes.
+        let clsObd = cObd ? claseDotEstado(cObd.estado) : 'dot-obd';
+        dots.push(`<span class="dot ${clsObd}" title="Semana ${labelObd} — OBD, no cuenta como progreso${cObd ? ' · ' + labelEstadoKickoff(cObd.estado) : ''}"></span>`);
         // Las 12 semanas de progreso real arrancan la semana siguiente al OBD.
         const semanasTranscurridas = idxHoy - idxInicio;
         for(let i=1; i<=12; i++){
@@ -2070,9 +2089,9 @@
           const labelDot = semanaDelAnio(fechaDot);
           const c = checkinsUnidad.find(x => x.semana_num === labelDot);
           let cls = 'dot-future';
-          if(c){ cls = 'dot-done'; }
+          if(c){ cls = claseDotEstado(c.estado); }
           else if(i <= semanasTranscurridas){ cls = 'dot-pending'; }
-          dots.push(`<span class="dot ${cls}" title="Semana ${labelDot}"></span>`);
+          dots.push(`<span class="dot ${cls}" title="Semana ${labelDot}${c ? ' · ' + labelEstadoKickoff(c.estado) : ''}"></span>`);
         }
         const pmrev = [u.pm_by, u.rev_by].filter(Boolean).join(' / ');
         // La campanita se calcula por dias, no por bucket de semana: arranca el jueves
