@@ -610,27 +610,13 @@
       <div class="section-title"><div class="left">Cumplimiento por grupo — <span id="vsMesTituloTabla">mes actual</span></div></div>
       <div class="scroll-x">
       <table>
-        <thead><tr><th>Grupo</th><th class="num">Revenue real</th><th class="num" id="vsRevObjHead">Revenue objetivo</th><th class="num">% cumplimiento</th><th>Estatus</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Grupo</th><th class="num">Revenue real</th><th class="num" id="vsRevObjHead">Revenue objetivo</th><th class="num">% cumplimiento</th><th>Curva</th></tr></thead>
         <tbody id="vsBody">
-          <tr><td colspan="6" style="text-align:center;color:#a8a498;">Cargando datos reales…</td></tr>
+          <tr><td colspan="5" style="text-align:center;color:#a8a498;">Cargando datos reales…</td></tr>
         </tbody>
       </table>
       </div>
-      <p class="footnote">Revenue real: reservas confirmadas de Guesty, prorateadas noche por noche. Revenue objetivo: proyección capturada en la pestaña Proyecciones. "Sugerir" y "Regenerar" son por grupo — cada uno abre su propio panel abajo.</p>
-    </div>
-
-    <div class="card ai-panel" id="aiPanel">
-      <div class="section-title"><div class="left">✨ Ideas sugeridas para <span id="aiGrupoNombre">—</span></div></div>
-      <div id="aiCardsWrap"></div>
-      <p class="footnote">Ajusta la nota antes de agregar si quieres darle más contexto al equipo. Entra a la Bitácora sin marcar como hecha, para que se revise y decida.</p>
-    </div>
-
-    <div class="card ai-panel" id="regenPanel">
-      <div class="section-title"><div class="left">🔁 Regenerar proyección — <span id="regenGrupoNombre">—</span></div></div>
-      <label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin-bottom:4px;">Notas para recalcular (contexto que la proyección actual de este grupo no tiene)</label>
-      <textarea id="regenNotas" style="width:100%; min-height:60px; font-size:11.5px; padding:8px 9px; border:1px solid #ddd8cc; border-radius:7px; font-family:inherit;" placeholder="Ej. Entran 2 unidades nuevas en septiembre, o ya se resolvió el problema de reviews"></textarea>
-      <div style="margin-top:10px;"><button class="btn-ai" onclick="regenerar()">Regenerar proyección de <span id="regenGrupoBtn">este grupo</span></button></div>
-      <div class="confirm-msg" id="regenConfirm">Proyección de este grupo recalculada. Revisa el detalle actualizado en Proyecciones → Detalle por grupo.</div>
+      <p class="footnote">Revenue real: reservas confirmadas de Guesty, prorateadas noche por noche. Revenue objetivo: proyección capturada en la pestaña Proyecciones. Curva: % de la meta ideal de cumplimiento para el día de hoy dentro del periodo.</p>
     </div>
   </div>
 
@@ -969,69 +955,6 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  // ---------- REAL VS PROYECCIÓN: sugerencias y regenerar, por partner ----------
-  const sugerenciasPorGrupo = {
-    'Choapan': [
-      {title:'ADR por encima del objetivo pero ocupación cayendo', accion:'Probar descuento por estadía larga para recuperar ocupación sin bajar ADR', notas:'Revisar impacto en las próximas 2 semanas'}
-    ],
-    'Corasol': [
-      {title:'Ocupación 11pts bajo objetivo', accion:'Revisar min-stay de fin de semana y abrir noches sueltas en agosto', notas:'Caída de ADR vs. comp set'}
-    ],
-    'Zaterra': [
-      {title:'Cerca del objetivo pero con margen de ADR', accion:'Subir tarifa base 5% en fines de semana de alta demanda', notas:'Validar con partner antes de aplicar'}
-    ],
-    'Aurora': [
-      {title:'3er mes consecutivo abajo del objetivo', accion:'Acelerar relanzamiento de reviews y bajar tarifa base 8% en septiembre', notas:'Ligado a ajuste ya registrado en Proyecciones'}
-    ],
-    'B2O_RivieraMaya': [
-      {title:'Cerca del objetivo, ocupación estable', accion:'Mantener estrategia actual, solo monitorear bloqueos de calendario', notas:'Sin acción urgente'}
-    ],
-    'Artila': [
-      {title:'Cerca del objetivo con una unidad menos', accion:'Confirmar con el partner si la unidad con falta de flexibilidad se libera para Q4', notas:'Depende de respuesta del propietario'}
-    ]
-  };
-
-  function showAiSuggestions(grupo){
-    document.getElementById('regenPanel').classList.remove('open');
-    document.getElementById('aiGrupoNombre').textContent = grupo;
-    const wrap = document.getElementById('aiCardsWrap');
-    wrap.innerHTML = '';
-    (sugerenciasPorGrupo[grupo] || []).forEach((s, i) => {
-      const card = document.createElement('div');
-      card.className = 'ai-card';
-      const notasId = 'aiNotas_' + grupo.replace(/\W/g,'') + '_' + i;
-      card.innerHTML = `<div class="top">
-          <div style="flex:1;">
-            <div class="ai-title">${s.title}</div>
-            <div class="ai-meta">Sugerencia: ${s.accion}</div>
-            <label style="font-size:10px; color:#8a8677; font-weight:600; display:block; margin:8px 0 4px;">Notas (editable antes de agregar)</label>
-            <input type="text" id="${notasId}" value="${s.notas}" style="width:100%; font-size:11.5px; padding:7px 9px; border:1px solid #ddd8cc; border-radius:6px; font-family:inherit;">
-          </div>
-          <button class="btn-dark btn-sm" style="white-space:nowrap;" onclick="agregarSugerencia('${s.accion.replace(/'/g,"\\'")}', '${grupo}', '${notasId}')">+ Agregar a Bitácora</button>
-        </div>`;
-      wrap.appendChild(card);
-    });
-    document.getElementById('aiPanel').classList.add('open');
-  }
-
-  async function agregarSugerencia(accion, partner, notasId){
-    const notas = notasId ? (document.getElementById(notasId).value || 'Sugerida por IA') : 'Sugerida por IA';
-    const ok = await crearAccionReal(accion, partner, notas, false);
-    if(ok){
-      await cargarAcciones();
-      alert('Agregada a la Bitácora para ' + partner + ' (sin marcar como hecha).');
-    }
-  }
-
-  function showRegen(grupo){
-    document.getElementById('aiPanel').classList.remove('open');
-    document.getElementById('regenGrupoNombre').textContent = grupo;
-    document.getElementById('regenGrupoBtn').textContent = grupo;
-    document.getElementById('regenNotas').value = '';
-    document.getElementById('regenPanel').dataset.grupo = grupo;
-    document.getElementById('regenPanel').classList.add('open');
   }
 
   // ---------- PROYECCIONES ----------
@@ -1871,7 +1794,7 @@
 
     const tbody = document.getElementById('vsBody');
     if(er || ep){
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b3312c;">No se pudieron cargar los datos reales — revisa la consola.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#b3312c;">No se pudieron cargar los datos reales — revisa la consola.</td></tr>';
       console.error(er || ep);
       return;
     }
@@ -1918,10 +1841,9 @@
     });
 
     if(allRealVsProy.length === 0){
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#a8a498;">Sin datos reales ni proyectados para este mes todavía.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#a8a498;">Sin datos reales ni proyectados para este mes todavía.</td></tr>';
     } else {
       tbody.innerHTML = allRealVsProy.map(row => {
-        const grupoEsc = row.grupo.replace(/'/g,"\\'");
         const mesesCerrados = mesesCerradosByGrupo[row.grupo] ? mesesCerradosByGrupo[row.grupo].size : 0;
         const filasCurva = curvaByGrupo[row.grupo];
         let estadoHtml;
@@ -1951,7 +1873,6 @@
           <td class="num">${row.revObj !== null ? fmtMoney(row.revObj) : '—'}</td>
           <td class="num">${row.pctCump !== null ? Math.round(row.pctCump) + '%' : '—'}</td>
           <td>${estadoHtml}</td>
-          <td><button class="btn-ghost btn-sm" onclick="showAiSuggestions('${grupoEsc}')">✨ Sugerir</button> <button class="btn-ghost btn-sm" onclick="showRegen('${grupoEsc}')">🔁 Regenerar</button></td>
         </tr>`;
       }).join('');
     }
@@ -2004,14 +1925,6 @@
     const dUnit = deltaHtml(unidadesObjTotal > 0 ? (unidadesRealTotal/unidadesObjTotal)*100 : null, '% del objetivo');
     document.getElementById('vsUnitDelta').className = 'kpi-delta ' + dUnit.cls;
     document.getElementById('vsUnitDelta').innerHTML = dUnit.html;
-  }
-
-  function regenerar(){
-    const grupo = document.getElementById('regenPanel').dataset.grupo || 'este grupo';
-    const confirmEl = document.getElementById('regenConfirm');
-    confirmEl.textContent = 'Proyección de ' + grupo + ' recalculada. Revisa el detalle actualizado en Proyecciones → Detalle por grupo.';
-    confirmEl.classList.add('show');
-    setTimeout(()=>confirmEl.classList.remove('show'), 6000);
   }
 
   // ---------- KICKOFF ----------
