@@ -244,13 +244,6 @@
     </div>
   </div>
 
-  <div class="filters">
-    <div class="filter-pill">📅 Jul 2026 <span class="caret">▾</span></div>
-    <div class="filter-pill">🏢 Todos los partners <span class="caret">▾</span></div>
-    <div class="filter-pill">👤 Todos los especialistas <span class="caret">▾</span></div>
-    <div class="filter-pill">🏠 Todos los grupos <span class="caret">▾</span></div>
-  </div>
-
   <div class="tabs">
     <button class="tab-btn active" data-tab="acciones">Bitácora</button>
     <button class="tab-btn" data-tab="proyecciones">Proyecciones</button>
@@ -309,9 +302,12 @@
     <div class="card">
       <div class="toggle-row">
         <div class="section-title" style="margin-bottom:0;"><div class="left">📋 Bitácora <span class="count" id="logCount">cargando…</span></div></div>
-        <div class="view-toggle">
+        <div class="view-toggle" style="align-items:center; gap:10px; flex-wrap:wrap;">
           <button class="subtab-btn active" onclick="setPeriodo('semana', this)">Semanal</button>
           <button class="subtab-btn" onclick="setPeriodo('mes', this)">Mensual</button>
+          <input type="date" id="bitacoraSemanaPicker" title="Elige cualquier día de la semana que quieras ver" onchange="aplicarFiltrosBitacora()" style="font-size:11px; padding:6px 8px; border:1px solid #ddd8cc; border-radius:6px; font-family:inherit;">
+          <input type="month" id="bitacoraMesPicker" title="Elige el mes que quieras ver" onchange="aplicarFiltrosBitacora()" style="display:none; font-size:11px; padding:6px 8px; border:1px solid #ddd8cc; border-radius:6px; font-family:inherit;">
+          <button class="btn-ghost btn-sm" onclick="descargarCSVBitacora()">⬇️ Descargar CSV</button>
         </div>
       </div>
 
@@ -716,6 +712,7 @@
 
   const PARTNERS_CONOCIDOS = ['Anera','ArcoLP','Artila','Aurora','B2O_30_70','B2O_70_30','B2O_RivieraMaya','B2O_Rojas','BB_PuntoNima','BellaMar','Chihuahua','Choapan','Colon','Corasol','Mojarra','Nalu','OK_Otros','OK_PortoBlu','RosaMorada','Serena','SolMar_Musa','TorreKu','Tree60','VillaRentals','Zaterra'];
   let allAcciones = [];
+  let bitacoraPeriodo = 'semana';
 
   function inicioDeSemana(){
     const d = new Date();
@@ -749,12 +746,9 @@
     if(allAcciones.length === 0){
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#a8a498;">Aún no hay registros en la bitácora — agrega el primero arriba.</td></tr>';
     } else {
-      const inicioSemana = inicioDeSemana();
       tbody.innerHTML = allAcciones.map(row => {
-        const creado = new Date(row.created_at);
-        const periodo = creado >= inicioSemana ? 'semana' : 'mes';
         const hecha = row.hecha;
-        return `<tr data-id="${row.id}" data-periodo="${periodo}" data-hecha="${hecha ? 'si' : 'no'}">
+        return `<tr data-id="${row.id}" data-creado="${row.created_at}" data-hecha="${hecha ? 'si' : 'no'}">
           <td>${fmtFecha(row.created_at)}</td>
           <td>${row.accion}</td>
           <td>${row.partner}</td>
@@ -824,7 +818,12 @@
     return true;
   }
 
-  window.addEventListener('DOMContentLoaded', () => { cargarAcciones(); cargarKickoff(); cargarProyecciones(); renderSelectoresFechaVs(); cargarRealVsProy(); });
+  window.addEventListener('DOMContentLoaded', () => {
+    const hoy = new Date();
+    document.getElementById('bitacoraSemanaPicker').value = hoy.toISOString().slice(0,10);
+    document.getElementById('bitacoraMesPicker').value = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0');
+    cargarAcciones(); cargarKickoff(); cargarProyecciones(); renderSelectoresFechaVs(); cargarRealVsProy();
+  });
 
   // ---------- tabs principales ----------
   document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
@@ -875,21 +874,60 @@
   function setPeriodo(p, btn){
     document.querySelectorAll('.view-toggle .subtab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    document.querySelectorAll('#logBody tr').forEach(tr=>{
-      if(p==='mes'){ tr.style.display=''; }
-      else { tr.style.display = tr.dataset.periodo === 'semana' ? '' : 'none'; }
-    });
+    bitacoraPeriodo = p;
+    document.getElementById('bitacoraSemanaPicker').style.display = p === 'semana' ? '' : 'none';
+    document.getElementById('bitacoraMesPicker').style.display = p === 'mes' ? '' : 'none';
+    aplicarFiltrosBitacora();
   }
 
   function filterLog(){
+    aplicarFiltrosBitacora();
+  }
+
+  // Rango [inicio, fin) de la semana (lunes-domingo) que contiene la fecha dada (Date o "YYYY-MM-DD").
+  function rangoSemanaDe(fechaOStr){
+    const base = typeof fechaOStr === 'string' ? new Date(fechaOStr + 'T00:00:00') : new Date(fechaOStr);
+    const day = (base.getDay() + 6) % 7; // lunes = 0
+    const inicio = new Date(base);
+    inicio.setHours(0,0,0,0);
+    inicio.setDate(inicio.getDate() - day);
+    const fin = new Date(inicio);
+    fin.setDate(inicio.getDate() + 7);
+    return { inicio, fin };
+  }
+
+  // Rango [inicio, fin) del mes dado como "YYYY-MM".
+  function rangoMesDe(mesStr){
+    const [anio, mes] = mesStr.split('-').map(Number);
+    const inicio = new Date(anio, mes - 1, 1, 0, 0, 0, 0);
+    const fin = new Date(anio, mes, 1, 0, 0, 0, 0);
+    return { inicio, fin };
+  }
+
+  // Une el toggle Semanal/Mensual (+ selector de semana/mes específico) con los filtros
+  // de columna, para que se combinen en vez de pisarse entre sí como antes.
+  function aplicarFiltrosBitacora(){
     const filters = {};
     document.querySelectorAll('.filter-row [data-col]').forEach(el => { filters[el.dataset.col] = el.value.toLowerCase(); });
+
+    let rango;
+    if(bitacoraPeriodo === 'semana'){
+      const val = document.getElementById('bitacoraSemanaPicker').value;
+      rango = rangoSemanaDe(val || new Date());
+    } else {
+      const val = document.getElementById('bitacoraMesPicker').value;
+      rango = rangoMesDe(val || inicioDeMesISO().slice(0,7));
+    }
+
     document.querySelectorAll('#logBody tr').forEach(tr=>{
-      const cells = tr.querySelectorAll('td');
+      if(!tr.dataset.id) return; // filas de "cargando…" / "sin registros"
       let visible = true;
+      const creado = new Date(tr.dataset.creado);
+      if(creado < rango.inicio || creado >= rango.fin) visible = false;
+      const cells = tr.querySelectorAll('td');
       Object.keys(filters).forEach(col=>{
         const val = filters[col];
-        if(!val) return;
+        if(!val || !visible) return;
         if(col==='5'){
           if(val==='si' && tr.dataset.hecha!=='si') visible=false;
           if(val==='no' && tr.dataset.hecha!=='no') visible=false;
@@ -900,6 +938,37 @@
       });
       tr.style.display = visible ? '' : 'none';
     });
+  }
+
+  function descargarCSVBitacora(){
+    const headers = ['Creada', 'Acción', 'Partner', 'Objetivo', 'Resultado', 'Hecha', 'Fecha marcada'];
+    const filas = [];
+    document.querySelectorAll('#logBody tr').forEach(tr=>{
+      if(!tr.dataset.id || tr.style.display === 'none') return;
+      const cells = tr.querySelectorAll('td');
+      filas.push([
+        cells[0].textContent.trim(),
+        cells[1].textContent.trim(),
+        cells[2].textContent.trim(),
+        cells[3].textContent.trim(),
+        cells[4].querySelector('.nota-texto') ? cells[4].querySelector('.nota-texto').textContent.trim() : cells[4].textContent.trim(),
+        tr.dataset.hecha === 'si' ? 'Sí' : 'No',
+        cells[6].textContent.trim()
+      ]);
+    });
+    const csv = [headers, ...filas].map(row => row.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const refPeriodo = bitacoraPeriodo === 'semana'
+      ? 'semana-de-' + (document.getElementById('bitacoraSemanaPicker').value || '')
+      : 'mes-' + (document.getElementById('bitacoraMesPicker').value || '');
+    a.href = url;
+    a.download = `bitacora_${refPeriodo}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ---------- REAL VS PROYECCIÓN: sugerencias y regenerar, por partner ----------
