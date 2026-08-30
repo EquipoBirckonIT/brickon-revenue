@@ -1727,14 +1727,37 @@
   // ---------- REAL VS PROYECCIÓN ----------
   let allRealVsProy = [];
 
-  // Estado de pace-check (Superado / En línea / Abajo), a partir de la brecha en puntos
-  // porcentuales vs. la curva ideal de cumplimiento (no del % crudo real/objetivo).
-  // >= +3 pts -> Superado · entre -3 y +3 -> En línea · < -3 -> Abajo.
-  function estatusPaceCheck(brechaPts){
-    if(brechaPts === null || brechaPts === undefined || isNaN(brechaPts)) return {label:'—', cls:''};
-    if(brechaPts >= 3) return {label:'Superado', cls:'b-baja'};
-    if(brechaPts >= -3) return {label:'En línea', cls:'b-media'};
-    return {label:'Abajo', cls:'b-alta'};
+  // Clase de color a partir de la brecha en puntos porcentuales (real % vs. meta de la curva ideal).
+  // >= +3 pts -> por encima (verde) · entre -3 y +3 -> en línea (amarillo) · < -3 -> atrasado (rojo).
+  function claseBrechaCurva(brechaPts){
+    if(brechaPts === null || brechaPts === undefined || isNaN(brechaPts)) return '';
+    if(brechaPts >= 3) return 'b-baja';
+    if(brechaPts >= -3) return 'b-media';
+    return 'b-alta';
+  }
+
+  // Periodo (mes/trimestre) actualmente seleccionado en Real vs. Proyección, como fecha de inicio.
+  // La vista "año" no tiene curva propia (solo existen curvas Mensual y Trimestral).
+  function inicioPeriodoVs(){
+    if(vsGranularidad === 'mes') return new Date(vsAnioSel, vsMesSel - 1, 1);
+    if(vsGranularidad === 'trimestre'){ const m0 = (vsTrimSel - 1) * 3; return new Date(vsAnioSel, m0, 1); }
+    return null;
+  }
+  function tipoCurvaVs(){
+    if(vsGranularidad === 'mes') return 'Mensual';
+    if(vsGranularidad === 'trimestre') return 'Trimestral';
+    return null;
+  }
+
+  // De las filas de curva de un grupo (ya filtradas por tipo), la más cercana al día relativo buscado.
+  function curvaMasCercana(filasCurva, diaBuscado){
+    if(!filasCurva || filasCurva.length === 0 || diaBuscado === null) return null;
+    let mejor = filasCurva[0], mejorDist = Math.abs(filasCurva[0].dia_relativo - diaBuscado);
+    for(const f of filasCurva){
+      const d = Math.abs(f.dia_relativo - diaBuscado);
+      if(d < mejorDist){ mejor = f; mejorDist = d; }
+    }
+    return mejor;
   }
 
   function deltaHtml(pct, sufijo){
@@ -1798,13 +1821,34 @@
       document.getElementById(id).textContent = base + ' — ' + labelPeriodo;
     });
 
-    const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }, { data: historialReal }] = await Promise.all([
+    const [{ data: real, error: er }, { data: proy, error: ep }, { data: grupos, error: eg }, { data: listingsActivos, error: el }, { data: historialReal }, { data: curvaData }] = await Promise.all([
       sb.from('real_mensual').select('*').eq('anio', anio).in('mes', meses),
       sb.from('proy_mensual').select('*').eq('anio', anio).in('mes', meses),
-      sb.from('proy_grupos').select('grupo, unidades_activas, tiene_curva_cumplimiento, pace_check_brecha_pts, pace_check_lectura, pace_check_periodo, pace_check_fecha'),
+      sb.from('proy_grupos').select('grupo, unidades_activas, estado'),
       sb.from('listings').select('grupo').eq('active', true).eq('cuenta_revenue', true),
-      sb.from('real_mensual').select('grupo, anio, mes, revenue_mensual')
+      sb.from('real_mensual').select('grupo, anio, mes, revenue_mensual'),
+      sb.from('curva_cumplimiento_ideal').select('grupo, tipo, dia_relativo, pct_curva')
     ]);
+
+    // Curva ideal de cumplimiento, en vivo: se toma directo de curva_cumplimiento_ideal (si un
+    // grupo tiene filas ahí, ya tiene curva propia -- no depende de un flag manual aparte), filtrada
+    // al tipo (Mensual/Trimestral) que corresponde al periodo seleccionado. La vista "año" no tiene
+    // curva propia todavía.
+    const tipoCurvaActual = tipoCurvaVs();
+    const curvaByGrupo = {};
+    if(tipoCurvaActual){
+      (curvaData || []).forEach(c => {
+        if(c.tipo !== tipoCurvaActual) return;
+        (curvaByGrupo[c.grupo] = curvaByGrupo[c.grupo] || []).push(c);
+      });
+    }
+    const periodoInicioVs = inicioPeriodoVs();
+    let diaRelativoHoy = null;
+    if(periodoInicioVs){
+      const hoyMid = new Date(); hoyMid.setHours(0,0,0,0);
+      periodoInicioVs.setHours(0,0,0,0);
+      diaRelativoHoy = Math.round((hoyMid - periodoInicioVs) / 86400000);
+    }
 
     // Meses cerrados reales = meses que ya transcurrieron por completo (antes del mes en curso)
     // y que tienen revenue real > 0. Un mes futuro puede tener revenue_mensual > 0 en real_mensual
@@ -1819,11 +1863,6 @@
         (mesesCerradosByGrupo[r.grupo] = mesesCerradosByGrupo[r.grupo] || new Set()).add(r.anio + '-' + r.mes);
       }
     });
-
-    // Ficha de pace-check por grupo (solo existe -- de verdad -- para los grupos que tienen
-    // una curva de cumplimiento propia construida por un analista; no se infiere de los datos).
-    const paceCheckByGrupo = {};
-    (grupos || []).forEach(g => { paceCheckByGrupo[g.grupo] = g; });
 
     const tbody = document.getElementById('vsBody');
     if(er || ep){
@@ -1853,8 +1892,12 @@
       if(!isNaN(occ)){ acc._occNum += disp * occ / 100; acc._occDen += disp; }
     });
     const unidadesObjByGrupo = {}; (grupos || []).forEach(g => unidadesObjByGrupo[g.grupo] = g.unidades_activas);
+    // Grupos terminados no deben aparecer aquí aunque tengan filas viejas de proy_mensual/real_mensual
+    // para el periodo seleccionado (no se borra el histórico, solo se excluye de esta vista).
+    const gruposTerminados = new Set((grupos || []).filter(g => g.estado === 'terminado').map(g => g.grupo));
 
-    const todosLosGrupos = Array.from(new Set([...Object.keys(realByGrupo), ...Object.keys(proyByGrupo)]));
+    const todosLosGrupos = Array.from(new Set([...Object.keys(realByGrupo), ...Object.keys(proyByGrupo)]))
+      .filter(grupo => !gruposTerminados.has(grupo));
 
     allRealVsProy = todosLosGrupos.map(grupo => {
       const r = realByGrupo[grupo];
@@ -1874,17 +1917,24 @@
     } else {
       tbody.innerHTML = allRealVsProy.map(row => {
         const grupoEsc = row.grupo.replace(/'/g,"\\'");
-        const ficha = paceCheckByGrupo[row.grupo];
         const mesesCerrados = mesesCerradosByGrupo[row.grupo] ? mesesCerradosByGrupo[row.grupo].size : 0;
+        const filasCurva = curvaByGrupo[row.grupo];
         let estadoHtml;
-        if(!ficha || !ficha.tiene_curva_cumplimiento){
-          // Sin curva de cumplimiento propia todavía (grupo nuevo o sin pace-check construido
-          // por un analista) -> Estado en blanco, no se infiere ni se marca "!" sin un Estado real.
+        if(!tipoCurvaActual){
+          estadoHtml = '<span title="La curva de cumplimiento no aplica a la vista por año — cámbiala a mes o trimestre" style="color:#a8a498;">—</span>';
+        } else if(!filasCurva || filasCurva.length === 0){
+          // Sin curva de cumplimiento propia todavía (grupo nuevo o sin curva cargada).
           estadoHtml = '<span title="Todavía no hay curva de cumplimiento propia para este grupo" style="color:#a8a498;">—</span>';
+        } else if(row.pctCump === null){
+          estadoHtml = '<span title="Sin objetivo o sin revenue real para comparar en este periodo" style="color:#a8a498;">—</span>';
         } else {
-          const est = estatusPaceCheck(Number(ficha.pace_check_brecha_pts));
-          const tituloBrecha = `${ficha.pace_check_periodo || ''}: brecha ${Number(ficha.pace_check_brecha_pts).toFixed(2)} pts vs. curva ideal (${ficha.pace_check_lectura || ''})`;
-          estadoHtml = est.label === '—' ? '—' : `<span class="badge ${est.cls}" title="${tituloBrecha}">${est.label}</span>`;
+          const filaCurva = curvaMasCercana(filasCurva, diaRelativoHoy);
+          const metaCurva = Number(filaCurva.pct_curva);
+          const brecha = row.pctCump - metaCurva;
+          const cls = claseBrechaCurva(brecha);
+          const diaTxt = filaCurva.dia_relativo >= 0 ? `día ${filaCurva.dia_relativo} del periodo` : `${Math.abs(filaCurva.dia_relativo)} días antes de iniciar`;
+          const tituloBrecha = `Meta de la curva ideal a ${diaTxt}: ${metaCurva.toFixed(1)}% ya reservado · Real hoy: ${row.pctCump.toFixed(1)}% · Brecha: ${brecha >= 0 ? '+' : ''}${brecha.toFixed(1)} pts`;
+          estadoHtml = `<span class="badge ${cls}" title="${tituloBrecha}">${Math.round(metaCurva)}%</span>`;
           if(mesesCerrados <= 6){
             estadoHtml += ` <span title="Solo ${mesesCerrados} mes(es) cerrado(s) -- curva de cumplimiento poco confiable todavía" style="color:#b3312c;font-weight:700;cursor:help;">!</span>`;
           }
